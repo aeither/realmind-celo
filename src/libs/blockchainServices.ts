@@ -58,36 +58,16 @@ export class BlockchainUtils {
     }
   }
 
+  // DEPRECATED: Use Farcaster miniapp connector instead
   static async requestWalletConnection(): Promise<{
     address: string
     isConnected: boolean
   }> {
-    try {
-      if (typeof window !== 'undefined' && window.ethereum) {
-        toast.info('🦊 Connecting to MetaMask...', {
-          description: 'Please approve the connection request'
-        })
-        
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        })
-        
-        if (accounts.length > 0) {
-          toast.success('✅ Wallet connected', {
-            description: `Address: ${accounts[0].substring(0, 10)}...`
-          })
-          return { address: accounts[0], isConnected: true }
-        }
-      }
-      
-      return { address: '', isConnected: false }
-    } catch (error) {
-      console.error('Wallet connection failed:', error)
-      toast.error('❌ Connection failed', {
-        description: 'Please install MetaMask'
-      })
-      return { address: '', isConnected: false }
-    }
+    console.warn('BlockchainUtils.requestWalletConnection is deprecated. Use Farcaster miniapp connector instead.')
+    toast.info('🔗 Please use the Connect button in the app header', {
+      description: 'Farcaster wallet connection required'
+    })
+    return { address: '', isConnected: false }
   }
 }
 
@@ -239,36 +219,20 @@ export class ThirdwebNFT {
   }
 }
 
-// Sequence Wallet integration for enhanced UX
+// DEPRECATED: Use Farcaster miniapp connector instead
 export class SequenceWallet {
   static async connectWallet(): Promise<{
     address: string
     isConnected: boolean
     provider: string
   }> {
-    // Try Sequence Wallet connection first, fallback to MetaMask
-    try {
-      const walletConnection = await BlockchainUtils.requestWalletConnection()
-      
-      if (walletConnection.isConnected) {
-        return {
-          address: walletConnection.address,
-          isConnected: true,
-          provider: "Sequence/MetaMask"
-        }
-      }
-      
-      // Fallback for demo
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      return {
-        address: `0x${Math.random().toString(16).substring(2, 42)}`,
-        isConnected: true,
-        provider: "Sequence"
-      }
-    } catch (error) {
-      console.error('Wallet connection error:', error)
-      throw new Error('Failed to connect wallet')
-    }
+    // DEPRECATED: Direct users to use the Farcaster connector
+    console.warn('SequenceWallet.connectWallet is deprecated. Use Farcaster miniapp connector instead.')
+    toast.info('🔗 Please use the Connect button in the app header', {
+      description: 'Farcaster wallet connection available'
+    })
+    
+    throw new Error('Please use the Farcaster wallet connector in the app header')
   }
   
   static async signTransaction(transaction: any): Promise<{

@@ -421,39 +421,49 @@ function ContractDebugPage() {
           boxShadow: "var(--shadow-card)",
           border: "1px solid hsl(var(--border))"
         }}>
-          <h2 style={{ fontSize: "1.75rem", marginBottom: "2rem", color: "#111827", fontWeight: 800 }}>
-            Connect Wallet to Debug Contract
+          <h2 style={{ fontSize: "1.75rem", marginBottom: "1rem", color: "#111827", fontWeight: 800 }}>
+            Connect Your Farcaster Wallet
           </h2>
+          <p style={{ color: "#6b7280", marginBottom: "2rem" }}>
+            Connect your wallet to debug and interact with the quiz contract
+          </p>
           
-          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-            {connectors.map((connector) => (
-              <button
-                key={connector.id}
-                onClick={() => connect({ connector })}
-                style={{
-                  backgroundColor: "#58CC02",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "12px",
-                  padding: "1rem 2rem",
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#46a001";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#58CC02";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                Connect {connector.name}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => connectors[0] && connect({ connector: connectors[0] })}
+            disabled={connectors.length === 0}
+            style={{
+              backgroundColor: "#8b5cf6",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "12px",
+              padding: "1rem 2rem",
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              cursor: connectors.length === 0 ? "not-allowed" : "pointer",
+              opacity: connectors.length === 0 ? 0.5 : 1,
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              if (connectors.length > 0) {
+                e.currentTarget.style.backgroundColor = "#7c3aed";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (connectors.length > 0) {
+                e.currentTarget.style.backgroundColor = "#8b5cf6";
+                e.currentTarget.style.transform = "translateY(0)";
+              }
+            }}
+          >
+            Connect Farcaster Wallet
+          </button>
+          
+          {connectors.length === 0 && (
+            <p style={{ color: "#ef4444", fontSize: "0.875rem", marginTop: "1rem" }}>
+              No Farcaster connector found. Make sure you're opening this app from Farcaster.
+            </p>
+          )}
         </div>
       </div>
     );

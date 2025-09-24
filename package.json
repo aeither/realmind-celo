@@ -15,8 +15,8 @@
   "dependencies": {
     "@coinbase/onchainkit": "^0.38.19",
     "@farcaster/miniapp-sdk": "^0.1.9",
+    "@farcaster/miniapp-wagmi-connector": "^1.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
-    "@rainbow-me/rainbowkit": "^2.2.8",
     "@redstone-finance/evm-connector": "^0.6.1",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "5.45.1",

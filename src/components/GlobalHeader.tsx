@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, useConnect, useDisconnect } from 'wagmi';
 import { formatEther } from 'viem';
 import { getContractAddresses, token1ABI } from '../libs/constants';
 
@@ -16,7 +15,9 @@ function GlobalHeader({
   backTo = "/", 
   backText = "← Back" 
 }: GlobalHeaderProps) {
-  const { address, chain } = useAccount();
+  const { address, chain, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
   
   // Get contract addresses based on current chain
   const contractAddresses = chain ? getContractAddresses(chain.id) : null;
@@ -130,22 +131,89 @@ function GlobalHeader({
           </div>
         )}
         
-        {/* RainbowKit Connect Button */}
+        {/* Farcaster Connect Button */}
         <motion.div whileHover={{ scale: 1.02 }}>
-          <ConnectButton
-            accountStatus={{
-              smallScreen: 'address',
-              largeScreen: 'address',
-            }}
-            chainStatus={{
-              smallScreen: 'icon',
-              largeScreen: 'name',
-            }}
-            showBalance={{
-              smallScreen: false,
-              largeScreen: false,
-            }}
-          />
+          {isConnected && address ? (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              background: "#f9fafb",
+              borderRadius: "12px",
+              padding: "0.5rem 1rem",
+              border: "1px solid #e5e7eb",
+              fontSize: "0.875rem"
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem"
+              }}>
+                <div style={{
+                  width: "8px",
+                  height: "8px",
+                  background: "#10b981",
+                  borderRadius: "50%"
+                }}></div>
+                <span style={{ fontFamily: "monospace", color: "#374151" }}>
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </span>
+              </div>
+              {chain && (
+                <span style={{ 
+                  color: "#6b7280", 
+                  fontSize: "0.75rem",
+                  display: window.innerWidth > 640 ? 'inline' : 'none'
+                }}>
+                  {chain.name}
+                </span>
+              )}
+              <button
+                onClick={() => disconnect()}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#ef4444",
+                  cursor: "pointer",
+                  fontSize: "0.75rem",
+                  padding: "0.25rem",
+                  borderRadius: "4px"
+                }}
+                title="Disconnect"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => connectors[0] && connect({ connector: connectors[0] })}
+              disabled={isPending || connectors.length === 0}
+              style={{
+                background: "#8b5cf6",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                padding: "0.5rem 1rem",
+                fontSize: "0.875rem",
+                fontWeight: "500",
+                cursor: isPending || connectors.length === 0 ? "not-allowed" : "pointer",
+                opacity: isPending || connectors.length === 0 ? 0.5 : 1,
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                if (!isPending && connectors.length > 0) {
+                  e.currentTarget.style.background = "#7c3aed";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isPending && connectors.length > 0) {
+                  e.currentTarget.style.background = "#8b5cf6";
+                }
+              }}
+            >
+              {isPending ? "Connecting..." : "Connect"}
+            </button>
+          )}
         </motion.div>
       </motion.div>
     </header>
