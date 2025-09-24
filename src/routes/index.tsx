@@ -18,31 +18,58 @@ interface Quiz {
 
 const AVAILABLE_QUIZZES: Quiz[] = [
   {
-    id: "web3-basics",
-    title: "Web3 Fundamentals",
-    description: "Test your knowledge of blockchain, cryptocurrencies, and decentralized applications",
-    icon: "🔗",
+    id: "celo-basics",
+    title: "CELO Basics",
+    description: "Learn the fundamentals of CELO blockchain and its Layer 2 capabilities",
+    icon: "🌱",
     questions: 3,
     estimatedTime: "1-2 min",
-    category: "Web3"
+    category: "CELO"
   },
   {
-    id: "crypto-trading",
-    title: "Crypto Trading",
-    description: "Learn about trading strategies, market analysis, and risk management",
-    icon: "📈",
+    id: "celo-l2-transition",
+    title: "CELO L2 Transition",
+    description: "Understanding CELO's evolution from L1 to L2 and key milestones",
+    icon: "🚀",
     questions: 3,
     estimatedTime: "1-2 min",
-    category: "Finance"
+    category: "CELO"
   },
   {
-    id: "defi-protocols",
-    title: "DeFi Protocols",
-    description: "Explore decentralized finance protocols, yield farming, and liquidity pools",
-    icon: "🏦",
+    id: "celo-features",
+    title: "CELO Features",
+    description: "Explore CELO's unique features like Fee Abstraction and native stablecoins",
+    icon: "⚡",
     questions: 3,
     estimatedTime: "1-2 min",
-    category: "DeFi"
+    category: "CELO"
+  },
+  {
+    id: "celo-development",
+    title: "Building on CELO",
+    description: "Learn about developing applications on CELO with tools and resources",
+    icon: "🛠️",
+    questions: 3,
+    estimatedTime: "1-2 min",
+    category: "CELO"
+  },
+  {
+    id: "celo-ecosystem",
+    title: "CELO Ecosystem",
+    description: "Discover funding opportunities and community programs in CELO",
+    icon: "🌍",
+    questions: 3,
+    estimatedTime: "1-2 min",
+    category: "CELO"
+  },
+  {
+    id: "celo-ai-agents",
+    title: "AI on CELO",
+    description: "Learn about AI applications and agents on the CELO blockchain",
+    icon: "🤖",
+    questions: 3,
+    estimatedTime: "1-2 min",
+    category: "CELO"
   }
 ];
 

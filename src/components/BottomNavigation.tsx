@@ -17,12 +17,12 @@ export default function BottomNavigation() {
       icon: '🏆',
       path: '/leaderboard'
     },
-    {
-      id: 'ai-quiz',
-      label: 'AI Quiz',
-      icon: '🤖',
-      path: '/ai-quiz'
-    }
+    // {
+    //   id: 'ai-quiz',
+    //   label: 'AI Quiz',
+    //   icon: '🤖',
+    //   path: '/ai-quiz'
+    // }
   ]
 
   const isActive = (path: string) => location.pathname === path
