@@ -29,9 +29,9 @@
     "noindex": false
   },
   "accountAssociation": {
-    "header": "eyJmaWQiOjIxNjM4MywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDIxNEQxNzJDMERjNjBmQTUxNERmOTU0QTgyOGJjQzU1MkJlMzA4MTUifQ",
+    "header": "eyJmaWQiOjIxNjM4MywidHlwZSI6ImF1dGgiLCJrZXkiOiIweENhMDU3RDcxRWY1NDE5RDZDNzhlNTI3MTU2NUFDZEMwMzAxZjA0ODAifQ",
     "payload": "eyJkb21haW4iOiJyZWFsbWluZC1jZWxvLmRhaWx5d2lzZXIueHl6In0",
-    "signature": "MHg0ZmQzMjg3M2UxNmViNDM4ODJlNmI0YTczMjgzMjQwYzY5ODVjYmFmNGMxZTg5N2M0NTQ1YWUzZTQxOTgwYTQxNWUwMjJkMTZmNjUyNDEyYjFmM2Q1NDcwNmU5NmZiOTM1ZDllZTAwNGE2YmIxYTI2MzBiOGVhMWIzY2RkY2FiODFj"
+    "signature": "dwYlcgDFFgLviJxyu++Xxo+fm4zTofJysH4N2uowrUh2jGNov1VitKJr2xYaP+nsILjhGqeYYbBdul+erut8Bhs="
   },
   "baseBuilder": {
     "allowedAddresses": [
