@@ -8,20 +8,21 @@ function FarcasterConnect() {
 
   if (isConnected && address) {
     return (
-      <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span className="text-sm font-medium text-gray-700">Connected</span>
+      <div className="flex flex-col items-stretch gap-4 p-6 bg-white border-[3px] border-black">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-black uppercase">Connected</span>
+          <div className="w-2.5 h-2.5 bg-[hsl(var(--celo-green))]"></div>
         </div>
-        <div className="text-center">
-          <p className="text-sm text-gray-600">Wallet Address:</p>
-          <p className="font-mono text-xs bg-gray-100 px-3 py-1 rounded-md mt-1">
+        <div className="text-left">
+          <p className="text-xs font-black uppercase text-black">Wallet</p>
+          <p className="font-mono text-sm bg-[hsl(var(--celo-tan-2))] px-3 py-2 inline-block border-[3px] border-black">
             {address.slice(0, 6)}...{address.slice(-4)}
           </p>
         </div>
         <Button 
           onClick={() => disconnect()} 
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+          variant="outline"
+          className=""
         >
           Disconnect
         </Button>
@@ -30,27 +31,26 @@ function FarcasterConnect() {
   }
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Connect Your Wallet
+    <div className="flex flex-col items-stretch gap-4 p-6 bg-white border-[3px] border-black">
+      <div className="text-left">
+        <h3 className="text-2xl font-thin tracking-tight leading-none">
+          Connect <em className="not-italic italic">Farcaster</em> Wallet
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Connect your Farcaster wallet to start playing quiz games and earning rewards
+        <p className="text-sm font-black uppercase text-black mt-2">
+          Start playing. Earn rewards. On-chain.
         </p>
       </div>
       
       <Button
         onClick={() => connect({ connector: connectors[0] })}
         disabled={isPending}
-        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isPending ? 'Connecting...' : 'Connect Wallet'}
+        {isPending ? 'Connecting...' : 'Connect'}
       </Button>
       
       {connectors.length === 0 && (
-        <p className="text-xs text-red-500 text-center">
-          No Farcaster connector found. Make sure you're opening this app from Farcaster.
+        <p className="text-xs font-black uppercase text-red-600">
+          No Farcaster connector found. Open this app in Farcaster.
         </p>
       )}
     </div>

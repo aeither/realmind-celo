@@ -306,7 +306,7 @@ function HomePage() {
         </div>
 
         {/* Daily Quiz Section - More Compact */}
-        <div style={{
+        {/* <div style={{
           background: "#ffffff",
           borderRadius: "12px",
           padding: "1.5rem",
@@ -346,10 +346,10 @@ function HomePage() {
           >
             {loading ? "Loading..." : "🚀 Start Daily Quiz"}
           </button>
-        </div>
+        </div> */}
 
         {/* AI Quiz Section */}
-        <div style={{
+        {/* <div style={{
           background: "#ffffff",
           borderRadius: "12px",
           padding: "1.5rem",
@@ -379,7 +379,7 @@ function HomePage() {
           >
             🧠 Generate AI Quiz
           </button>
-        </div>
+        </div> */}
 
         {/* Available Quizzes - More Compact */}
         <div style={{ marginBottom: "1.5rem" }}>

@@ -50,66 +50,70 @@
 
 @layer base {
   :root {
-    /* Light theme foundation */
-    --background: 210 20% 98%; /* #F7F9FB */
-    --foreground: 220 15% 20%; /* #1F2937 */
+    /* Celo-brand raw, high-contrast palette */
+    --celo-yellow: 56 100% 66%; /* #FCFF52 */
+    --celo-green: 86 40% 28%;  /* #4E632A */
+    --celo-purple: 289 86% 9%;  /* #1A0329 */
+    --celo-tan: 32 59% 97%;     /* #FBF6F1 */
+    --celo-tan-2: 49 25% 86%;   /* #E6E3D5 */
+    --celo-brown: 33 14% 34%;   /* #635949 */
+    --celo-black: 0 0% 0%;      /* #000000 */
+    --celo-white: 0 0% 100%;    /* #FFFFFF */
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    /* Accents used sparingly */
+    --celo-pink: 320 76% 80%;   /* #F2A9E7 */
+    --celo-orange: 24 87% 67%;  /* #F29E5F */
+    --celo-lime: 103 65% 78%;   /* #B2EBA1 */
+    --celo-blue: 208 79% 77%;   /* #8AC0F9 */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    /* App tokens mapped to Celo palette */
+    --background: var(--celo-tan);
+    --foreground: var(--celo-black);
+    --card: var(--celo-white);
+    --card-foreground: var(--celo-black);
+    --popover: var(--celo-white);
+    --popover-foreground: var(--celo-black);
+    --primary: var(--celo-yellow);
+    --primary-foreground: var(--celo-black);
+    --secondary: var(--celo-tan-2);
+    --secondary-foreground: var(--celo-black);
+    --muted: var(--celo-tan-2);
+    --muted-foreground: 0 0% 20%;
+    --accent: var(--celo-green);
+    --accent-foreground: var(--celo-white);
+    --destructive: 0 84% 50%;
+    --destructive-foreground: var(--celo-white);
+    --border: 0 0% 0%; /* black borders */
+    --input: var(--celo-white);
+    --ring: var(--celo-purple);
+    --radius: 0px; /* Unsoftened rectangles */
 
-    /* Duolingo-style green accent */
-    --primary: 96 98% 40%; /* #58CC02 */
-    --primary-foreground: 0 0% 100%; /* white */
-    --primary-glow: 96 85% 50%;
+    /* Quiz-specific remap to high-contrast */
+    --quiz-correct: 103 65% 38%; /* deeper lime */
+    --quiz-incorrect: 0 84% 50%;
+    --quiz-neutral: 49 25% 86%;
+    --quiz-selected: 56 100% 66%;
 
-    --secondary: 210 20% 96%; /* light slate */
-    --secondary-foreground: 220 15% 20%;
+    /* Stark, hard-edged gradient example */
+    --gradient-primary: linear-gradient(90deg, hsl(var(--celo-yellow)) 0 50%, hsl(var(--celo-black)) 50% 100%);
+    --gradient-card: linear-gradient(0deg, hsl(var(--celo-white)) 0%, hsl(var(--celo-white)) 100%);
+    --gradient-glow: linear-gradient(90deg, hsl(var(--celo-purple)) 0 50%, transparent 50% 100%);
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 20% 45%; /* #6B7280 */
+    /* Minimal shadows; emphasis on strokes */
+    --shadow-glow: 0 0 0 rgba(0,0,0,0);
+    --shadow-card: 0 0 0 rgba(0,0,0,0);
+    --shadow-button: 0 0 0 rgba(0,0,0,0);
 
-    --accent: 96 85% 45%;
-    --accent-foreground: 0 0% 100%;
+    --transition-smooth: all 0.15s linear;
+    --transition-bounce: all 0.15s linear;
 
-    --destructive: 0 84% 60%; /* #EF4444 */
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 210 13% 90%; /* #E5E7EB */
-    --input: 0 0% 100%;
-    --ring: 96 98% 40%;
-
-    --radius: 1rem;
-
-    /* Quiz-specific colors */
-    --quiz-correct: 96 85% 45%;
-    --quiz-incorrect: 0 84% 60%;
-    --quiz-neutral: 210 20% 96%;
-    --quiz-selected: 96 60% 92%;
-
-    /* Gradients kept very subtle for minimal look */
-    --gradient-primary: linear-gradient(135deg, hsl(96 98% 40%) 0%, hsl(96 85% 45%) 100%);
-    --gradient-card: linear-gradient(0deg, hsl(0 0% 100%) 0%, hsl(0 0% 100%) 100%);
-    --gradient-glow: radial-gradient(circle at 50% 50%, hsl(96 98% 40% / 0.08) 0%, transparent 70%);
-
-    /* Soft shadows for depth */
-    --shadow-glow: 0 0 24px hsl(96 98% 40% / 0.25);
-    --shadow-card: 0 8px 24px rgba(16, 24, 40, 0.06);
-    --shadow-button: 0 4px 12px rgba(88, 204, 2, 0.25);
-
-    /* Animation timings */
-    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.45s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 20%;
-    --sidebar-primary: 96 98% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 210 13% 90%;
+    --sidebar-background: var(--celo-white);
+    --sidebar-foreground: var(--celo-black);
+    --sidebar-primary: var(--celo-yellow);
+    --sidebar-primary-foreground: var(--celo-black);
+    --sidebar-accent: var(--celo-tan-2);
+    --sidebar-accent-foreground: var(--celo-black);
+    --sidebar-border: 0 0% 0%;
   }
 }
 
@@ -171,7 +175,9 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', 'Nunito', Arial, sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
+    letter-spacing: 0.01em;
+    text-rendering: geometricPrecision;
     background-image: none;
   }
 }
@@ -306,30 +312,28 @@
 
 /* Legacy quiz styles for compatibility */
 .quiz-header {
-  background: hsl(var(--card));
+  background: hsl(var(--celo-yellow));
+  color: hsl(var(--celo-black));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 2rem;
-  border-bottom: 1px solid hsl(var(--border));
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: hsl(var(--primary));
-  box-shadow: none;
+  padding: 1rem 2rem;
+  border-bottom: 2px solid hsl(var(--celo-black));
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .quiz-card {
-  background: hsl(var(--card));
-  border-radius: 24px;
-  box-shadow: var(--shadow-card);
+  background: hsl(var(--celo-white));
+  border-radius: 0px;
   margin: 2rem auto;
-  padding: 2.5rem 2rem 2rem 2rem;
-  max-width: 450px;
+  padding: 2rem;
+  max-width: 540px;
   min-width: 320px;
-  text-align: center;
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-  backdrop-filter: blur(2px);
+  text-align: left;
+  color: hsl(var(--celo-black));
+  border: 3px solid hsl(var(--celo-black));
 }
 
 .quiz-progress {
@@ -366,25 +370,21 @@
 }
 
 .quiz-option-btn {
-  background: hsl(var(--card));
-  border: 2px solid hsl(var(--border));
-  border-radius: 16px;
-  padding: 1.2rem;
+  background: hsl(var(--celo-white));
+  border: 3px solid hsl(var(--celo-black));
+  border-radius: 0;
+  padding: 1.1rem 1.25rem;
   font-size: 1rem;
-  font-weight: 500;
-  color: hsl(var(--foreground));
+  font-weight: 700;
+  color: hsl(var(--celo-black));
   cursor: pointer;
   transition: var(--transition-smooth);
   text-align: left;
-  box-shadow: none;
 }
 
 .quiz-option-btn:hover:not(:disabled) {
-  background: hsl(var(--quiz-selected));
-  border-color: hsl(var(--primary));
-  color: hsl(var(--foreground));
-  transform: translateY(-1px);
-  box-shadow: none;
+  background: hsl(var(--celo-black));
+  color: hsl(var(--celo-yellow));
 }
 
 .quiz-option-btn.selected {
@@ -406,23 +406,22 @@
 }
 
 .quiz-submit-btn {
-  background: var(--gradient-primary);
-  color: hsl(var(--primary-foreground));
-  border: none;
-  border-radius: 16px;
+  background: hsl(var(--celo-yellow));
+  color: hsl(var(--celo-black));
+  border: 3px solid hsl(var(--celo-black));
+  border-radius: 0;
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
   transition: var(--transition-smooth);
-  box-shadow: var(--shadow-button);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.02em;
 }
 
 .quiz-submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(88, 204, 2, 0.35);
+  background: hsl(var(--celo-black));
+  color: hsl(var(--celo-yellow));
 }
 
 .quiz-submit-btn:disabled {

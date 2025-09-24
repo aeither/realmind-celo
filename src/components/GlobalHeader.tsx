@@ -51,14 +51,12 @@ function GlobalHeader({
         left: 0,
         right: 0,
         zIndex: 1000,
-        background: "rgba(255, 255, 255, 0.25)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid hsl(var(--border))",
+        background: "hsl(var(--celo-yellow))",
+        borderBottom: "3px solid hsl(var(--celo-black))",
         padding: "0.75rem clamp(0.5rem, 3vw, 2rem)",
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
-        boxShadow: "0 2px 10px rgba(16, 24, 40, 0.06)"
+        alignItems: "stretch"
       }}
     >
       {/* Left side - Realmind text and Back button */}
@@ -67,20 +65,24 @@ function GlobalHeader({
           <Link
             to={backTo}
             style={{
-              color: "hsl(var(--primary))",
+              color: "hsl(var(--celo-black))",
               textDecoration: "none",
               fontSize: "clamp(0.9rem, 3vw, 1rem)",
-              fontWeight: "700",
+              fontWeight: 900,
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
-              transition: "color 0.3s ease"
+              border: "3px solid hsl(var(--celo-black))",
+              padding: "0.4rem 0.8rem",
+              background: "hsl(var(--celo-yellow))"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#3aaa00";
+              e.currentTarget.style.background = "hsl(var(--celo-black))";
+              e.currentTarget.style.color = "hsl(var(--celo-yellow))";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "hsl(var(--primary))";
+              e.currentTarget.style.background = "hsl(var(--celo-yellow))";
+              e.currentTarget.style.color = "hsl(var(--celo-black))";
             }}
           >
             <span className="hidden sm:inline">{backText}</span>
@@ -92,16 +94,19 @@ function GlobalHeader({
         <Link
           to="/"
           style={{
-            color: "hsl(var(--primary))",
+            color: "hsl(var(--celo-black))",
             textDecoration: "none",
-            fontSize: "clamp(1rem, 4vw, 1.5rem)",
-            fontWeight: 800,
+            fontSize: "clamp(1.6rem, 6vw, 3.2rem)",
+            fontWeight: 300,
+            fontStyle: "normal",
+            letterSpacing: "-0.02em",
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem"
+            gap: "0.5rem",
+            lineHeight: 1
           }}
         >
-          Realmind
+          Realmind <em style={{ fontStyle: 'italic' }}>Celo</em>
         </Link>
         </motion.div>
       </div>
@@ -111,20 +116,20 @@ function GlobalHeader({
         {/* Token Balance Display */}
         {address && tokenBalance !== undefined && tokenBalance !== 0n && tokenSymbol && (
           <div style={{
-            background: "hsl(var(--quiz-selected))",
-            borderRadius: "8px",
-            padding: "clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 2vw, 1rem)",
-            border: "1px solid hsl(var(--primary))"
+            background: "hsl(var(--celo-white))",
+            borderRadius: "0px",
+            padding: "0.4rem 0.8rem",
+            border: "3px solid hsl(var(--celo-black))"
           }}>
             <div style={{
-              color: "hsl(var(--primary))",
-              fontSize: "clamp(0.8rem, 3vw, 0.9rem)",
-              fontWeight: "600",
+              color: "hsl(var(--celo-black))",
+              fontSize: "clamp(0.8rem, 3vw, 0.95rem)",
+              fontWeight: 900,
               display: "flex",
               alignItems: "center",
               gap: "0.5rem"
             }}>
-              <span>🟢</span>
+              <span>■</span>
               <span className="hidden sm:inline">{parseFloat(formatEther(tokenBalance)).toFixed(2)} {tokenSymbol}</span>
               <span className="sm:hidden">{parseFloat(formatEther(tokenBalance)).toFixed(2)}</span>
             </div>
@@ -138,10 +143,10 @@ function GlobalHeader({
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
-              background: "#f9fafb",
-              borderRadius: "12px",
+              background: "hsl(var(--celo-white))",
+              borderRadius: "0px",
               padding: "0.5rem 1rem",
-              border: "1px solid #e5e7eb",
+              border: "3px solid hsl(var(--celo-black))",
               fontSize: "0.875rem"
             }}>
               <div style={{
@@ -150,10 +155,9 @@ function GlobalHeader({
                 gap: "0.375rem"
               }}>
                 <div style={{
-                  width: "8px",
-                  height: "8px",
-                  background: "#10b981",
-                  borderRadius: "50%"
+                  width: "10px",
+                  height: "10px",
+                  background: "hsl(var(--celo-green))"
                 }}></div>
                 <span style={{ fontFamily: "monospace", color: "#374151" }}>
                   {address.slice(0, 6)}...{address.slice(-4)}
@@ -161,7 +165,7 @@ function GlobalHeader({
               </div>
               {chain && (
                 <span style={{ 
-                  color: "#6b7280", 
+                  color: "hsl(var(--celo-brown))", 
                   fontSize: "0.75rem",
                   display: window.innerWidth > 640 ? 'inline' : 'none'
                 }}>
@@ -171,13 +175,12 @@ function GlobalHeader({
               <button
                 onClick={() => disconnect()}
                 style={{
-                  background: "none",
-                  border: "none",
-                  color: "#ef4444",
+                  background: "hsl(var(--celo-black))",
+                  border: "3px solid hsl(var(--celo-black))",
+                  color: "hsl(var(--celo-white))",
                   cursor: "pointer",
                   fontSize: "0.75rem",
-                  padding: "0.25rem",
-                  borderRadius: "4px"
+                  padding: "0.25rem 0.5rem"
                 }}
                 title="Disconnect"
               >
@@ -189,25 +192,26 @@ function GlobalHeader({
               onClick={() => connectors[0] && connect({ connector: connectors[0] })}
               disabled={isPending || connectors.length === 0}
               style={{
-                background: "#8b5cf6",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
+                background: "hsl(var(--celo-black))",
+                color: "hsl(var(--celo-yellow))",
+                border: "3px solid hsl(var(--celo-black))",
                 padding: "0.5rem 1rem",
                 fontSize: "0.875rem",
-                fontWeight: "500",
+                fontWeight: 900,
                 cursor: isPending || connectors.length === 0 ? "not-allowed" : "pointer",
                 opacity: isPending || connectors.length === 0 ? 0.5 : 1,
                 transition: "all 0.2s ease"
               }}
               onMouseEnter={(e) => {
                 if (!isPending && connectors.length > 0) {
-                  e.currentTarget.style.background = "#7c3aed";
+                  e.currentTarget.style.background = "hsl(var(--celo-yellow))";
+                  e.currentTarget.style.color = "hsl(var(--celo-black))";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isPending && connectors.length > 0) {
-                  e.currentTarget.style.background = "#8b5cf6";
+                  e.currentTarget.style.background = "hsl(var(--celo-black))";
+                  e.currentTarget.style.color = "hsl(var(--celo-yellow))";
                 }
               }}
             >
