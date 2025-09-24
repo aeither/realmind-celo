@@ -19,7 +19,7 @@ function LeaderboardPage() {
 
   // Get contract addresses and rewards config based on current chain
   const contractAddresses = chain ? getContractAddresses(chain.id) : null
-  const rewardsConfig = chain ? getRewardsConfig(chain.id) : null
+  const rewardsConfig = getRewardsConfig(chain?.id || 0)
 
   const fetchLeaderboard = async () => {
     if (!chain || !contractAddresses) return
@@ -31,7 +31,7 @@ function LeaderboardPage() {
       const result = await leaderboardService.getLeaderboard(
         contractAddresses.token1ContractAddress,
         chain.id,
-        rewardsConfig?.maxWinners || 200
+        rewardsConfig.maxWinners
       )
 
       if (result.success && result.holders) {
@@ -57,7 +57,7 @@ function LeaderboardPage() {
 
   // Calculate days remaining based on chain's season end date
   useEffect(() => {
-    if (rewardsConfig?.seasonEndDate) {
+    if (rewardsConfig.seasonEndDate) {
       const seasonEndDate = new Date(rewardsConfig.seasonEndDate)
       const today = new Date()
       const timeDiff = seasonEndDate.getTime() - today.getTime()
@@ -113,7 +113,7 @@ function LeaderboardPage() {
             </h1>
             
             {/* Season Badge - compact version */}
-            {rewardsConfig?.seasonEndDate && (
+            {rewardsConfig.seasonEndDate && (
               <div style={{ 
                 display: "inline-flex",
                 alignItems: "center",
@@ -159,9 +159,9 @@ function LeaderboardPage() {
                 color: "#000000",
                 lineHeight: "1.2"
               }}>
-                {(rewardsConfig?.totalReward || 1000) >= 1000 
-                  ? `${((rewardsConfig?.totalReward || 1000) / 1000).toFixed(0)}K` 
-                  : (rewardsConfig?.totalReward || 1000)}
+                {rewardsConfig.totalReward >= 1000 
+                  ? `${(rewardsConfig.totalReward / 1000).toFixed(0)}K` 
+                  : rewardsConfig.totalReward}
               </div>
               <div style={{ 
                 fontSize: "0.7rem", 
@@ -170,7 +170,7 @@ function LeaderboardPage() {
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
               }}>
-                {rewardsConfig?.currency} Pool ℹ️
+                {rewardsConfig.currency} Pool ℹ️
               </div>
               {showTooltip === 'pool' && (
                 <div style={{
@@ -208,7 +208,7 @@ function LeaderboardPage() {
                 color: "#000000",
                 lineHeight: "1.2"
               }}>
-                {rewardsConfig?.maxWinners || 200}
+                {rewardsConfig.maxWinners}
               </div>
               <div style={{ 
                 fontSize: "0.7rem", 
@@ -411,7 +411,7 @@ function LeaderboardPage() {
                     textTransform: "uppercase",
                     letterSpacing: "0.05em"
                   }}>
-                    📊 Your Current Position
+                    📊 Your Current Positionx
                   </div>
                   <div style={{ 
                     fontSize: "2rem", 
@@ -424,11 +424,11 @@ function LeaderboardPage() {
                   <div style={{
                     fontSize: "0.9rem",
                     color: "#64748b",
-                    marginBottom: userRank > (rewardsConfig?.maxWinners || 200) ? "0.75rem" : "0"
+                    marginBottom: userRank > rewardsConfig.maxWinners ? "0.75rem" : "0"
                   }}>
                     out of {holders.length} players
                   </div>
-                  {userRank > (rewardsConfig?.maxWinners || 200) && (
+                  {userRank > rewardsConfig.maxWinners && (
                     <div style={{ 
                       fontSize: "0.8rem", 
                       color: "#f59e0b",
@@ -497,8 +497,8 @@ function LeaderboardPage() {
                   {holders.map((holder, index) => {
                     const rank = index + 1
                     const getProportionalReward = (userXP: string) => {
-                      const totalReward = rewardsConfig?.totalReward || 1000
-                      const maxWinners = rewardsConfig?.maxWinners || 200
+                      const totalReward = rewardsConfig.totalReward
+                      const maxWinners = rewardsConfig.maxWinners
                       
                       // Calculate total XP of eligible winners (top N or all if less than N)
                       const eligibleHolders = holders.slice(0, Math.min(holders.length, maxWinners))
@@ -576,7 +576,7 @@ function LeaderboardPage() {
                           </span>
                         </td>
                         <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                          {rank <= (rewardsConfig?.maxWinners || 200) ? (
+                          {rank <= rewardsConfig.maxWinners ? (
                             <span style={{
                               background: rank <= 3 ? "#58CC02" : "#f3f4f6",
                               color: rank <= 3 ? "white" : "#374151",
@@ -586,7 +586,7 @@ function LeaderboardPage() {
                               fontWeight: "600",
                               display: "inline-block"
                             }}>
-                              {rewardsConfig?.symbol || "💰"} {getProportionalReward(holder.balance)}
+                              {rewardsConfig.symbol} {getProportionalReward(holder.balance)}
                             </span>
                           ) : (
                             <span style={{
@@ -611,7 +611,7 @@ function LeaderboardPage() {
 
             {/* Footer */}
             <div style={{ marginTop: "1.5rem", textAlign: "center", fontSize: "0.8rem", color: "#6b7280" }}>
-              <p>Rewards distributed proportionally by XP share among top {rewardsConfig?.maxWinners || 200} holders</p>
+              <p>Rewards distributed proportionally by XP share among top {rewardsConfig.maxWinners} holders</p>
               <p>Data updates every 5 minutes • Powered by Blockscout indexing</p>
               <p style={{ fontSize: "0.7rem", marginTop: "0.5rem", color: "#9ca3af" }}>
                 ⚠️ Blockscout indexing can be slow. For real-time data, check{" "}

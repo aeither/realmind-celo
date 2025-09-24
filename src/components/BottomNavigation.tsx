@@ -33,65 +33,73 @@ export default function BottomNavigation() {
       bottom: 0,
       left: 0,
       right: 0,
-      background: 'rgba(255, 255, 255, 0.2)',
-      backdropFilter: 'blur(20px)',
-      borderTop: '1px solid #e5e7eb',
-      padding: '0.25rem 0',
-      paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))`,
+      background: 'hsl(var(--celo-white))',
+      border: 'var(--outline-thick)',
+      borderBottom: 'none',
+      padding: '0.5rem 0',
+      paddingBottom: `calc(1.5rem + env(safe-area-inset-bottom, 0px))`,
       zIndex: 1000,
       display: 'flex',
       justifyContent: 'space-around',
-      alignItems: 'center',
-      boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)'
+      alignItems: 'stretch'
     }}>
       {navItems.map((item) => (
         <button
           key={item.id}
           onClick={() => navigate({ to: item.path })}
+          className={isActive(item.path) ? "color-block-yellow" : ""}
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.25rem',
-            padding: '0.75rem 0.5rem',
-            background: isActive(item.path) ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-            border: 'none',
-            borderRadius: '16px',
+            gap: '0.3rem',
+            padding: '1rem 0.8rem',
+            background: isActive(item.path) ? 'hsl(var(--celo-yellow))' : 'hsl(var(--celo-white))',
+            border: isActive(item.path) ? 'var(--outline-medium)' : 'var(--outline-thin)',
             cursor: 'pointer',
-            color: isActive(item.path) ? '#3b82f6' : '#6b7280',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            width: '70px',
-            height: '60px',
-            position: 'relative',
-            transform: isActive(item.path) ? 'translateY(-2px)' : 'translateY(0)'
+            color: isActive(item.path) ? 'hsl(var(--celo-black))' : 'hsl(var(--celo-black))',
+            transition: 'var(--transition-fast)',
+            minWidth: '80px',
+            height: '70px',
+            fontFamily: 'var(--font-body)',
+            fontWeight: 'var(--font-weight-body-black)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.02em'
           }}
           onMouseEnter={(e) => {
             if (!isActive(item.path)) {
-              e.currentTarget.style.background = 'rgba(107, 114, 128, 0.1)'
-              e.currentTarget.style.transform = 'translateY(-1px)'
+              e.currentTarget.style.background = 'hsl(var(--celo-yellow))'
+              e.currentTarget.style.color = 'hsl(var(--celo-black))'
+              e.currentTarget.style.border = 'var(--outline-medium)'
             }
           }}
           onMouseLeave={(e) => {
             if (!isActive(item.path)) {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.background = 'hsl(var(--celo-white))'
+              e.currentTarget.style.color = 'hsl(var(--celo-black))'
+              e.currentTarget.style.border = 'var(--outline-thin)'
             }
           }}
         >
           <span style={{ 
-            fontSize: '1.5rem',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            transform: isActive(item.path) ? 'scale(1.1)' : 'scale(1)'
+            fontSize: '1.2rem',
+            fontWeight: 'var(--font-weight-body-black)',
+            transition: 'var(--transition-fast)',
+            display: 'block',
+            marginBottom: '0.2rem'
           }}>
             {item.icon}
           </span>
           <span style={{ 
-            fontSize: '0.65rem', 
-            fontWeight: isActive(item.path) ? '600' : '500',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            fontSize: '0.6rem', 
+            fontFamily: 'var(--font-body)',
+            fontWeight: 'var(--font-weight-body-black)',
+            transition: 'var(--transition-fast)',
             textAlign: 'center',
-            lineHeight: '1.2'
+            lineHeight: '1',
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase'
           }}>
             {item.label}
           </span>

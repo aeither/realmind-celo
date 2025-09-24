@@ -33,10 +33,10 @@ const REWARDS_CONFIG = {
   },
   // Celo
   42220: {
-    totalReward: 0,
+    totalReward: 0, 
     currency: "CELO",
     symbol: "🟡",
-    maxWinners: 50,
+    maxWinners: 10,
     seasonEndDate: undefined // Celo season ends December 31, 2025
   },
   // EDU Chain
@@ -123,7 +123,7 @@ export function getContractAddresses(chainId: number) {
 // Function to get rewards configuration by chain ID
 export function getRewardsConfig(chainId: number) {
   return REWARDS_CONFIG[chainId as keyof typeof REWARDS_CONFIG] || {
-    totalReward: 1000,
+    totalReward: 0,
     currency: "UNKNOWN",
     symbol: "❓",
     maxWinners: 200,

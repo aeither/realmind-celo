@@ -1,13 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;750;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=GT+Alpina:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: 100vw;
+  margin: 0;
   padding: 0;
-  text-align: center;
+  text-align: left;
+  background-color: hsl(var(--background));
+  min-height: 100vh;
 }
 
 .logo {
@@ -50,23 +54,23 @@
 
 @layer base {
   :root {
-    /* Celo-brand raw, high-contrast palette */
-    --celo-yellow: 56 100% 66%; /* #FCFF52 */
-    --celo-green: 86 40% 28%;  /* #4E632A */
-    --celo-purple: 289 86% 9%;  /* #1A0329 */
-    --celo-tan: 32 59% 97%;     /* #FBF6F1 */
-    --celo-tan-2: 49 25% 86%;   /* #E6E3D5 */
-    --celo-brown: 33 14% 34%;   /* #635949 */
-    --celo-black: 0 0% 0%;      /* #000000 */
-    --celo-white: 0 0% 100%;    /* #FFFFFF */
+    /* Celo-brand raw, high-contrast palette - BOLD & UNAPOLOGETIC */
+    --celo-yellow: 56 100% 66%; /* #FCFF52 - BRIGHT ENERGY */
+    --celo-green: 86 40% 28%;  /* #4E632A - DEEP FOREST */
+    --celo-purple: 289 86% 9%;  /* #1A0329 - DARK POWER */
+    --celo-tan: 32 59% 97%;     /* #FBF6F1 - LIGHT FOUNDATION */
+    --celo-tan-2: 49 25% 86%;   /* #E6E3D5 - NEUTRAL STRUCTURE */
+    --celo-brown: 33 14% 34%;   /* #635949 - INDUSTRIAL TONE */
+    --celo-black: 0 0% 0%;      /* #000000 - PURE CONTRAST */
+    --celo-white: 0 0% 100%;    /* #FFFFFF - CLEAN BASE */
 
-    /* Accents used sparingly */
-    --celo-pink: 320 76% 80%;   /* #F2A9E7 */
-    --celo-orange: 24 87% 67%;  /* #F29E5F */
-    --celo-lime: 103 65% 78%;   /* #B2EBA1 */
-    --celo-blue: 208 79% 77%;   /* #8AC0F9 */
+    /* HIGH-ENERGY ACCENT PUNCHES - use sparingly for maximum impact */
+    --celo-pink: 320 76% 80%;   /* #F2A9E7 - ELECTRIC SHOCK */
+    --celo-orange: 24 87% 67%;  /* #F29E5F - BURNING HIGHLIGHT */
+    --celo-lime: 103 65% 78%;   /* #B2EBA1 - NEON PULSE */
+    --celo-blue: 208 79% 77%;   /* #8AC0F9 - DIGITAL GLOW */
 
-    /* App tokens mapped to Celo palette */
+    /* ARCHITECTURAL DESIGN TOKENS - raw and structural */
     --background: var(--celo-tan);
     --foreground: var(--celo-black);
     --card: var(--celo-white);
@@ -75,45 +79,56 @@
     --popover-foreground: var(--celo-black);
     --primary: var(--celo-yellow);
     --primary-foreground: var(--celo-black);
-    --secondary: var(--celo-tan-2);
-    --secondary-foreground: var(--celo-black);
+    --secondary: var(--celo-purple);
+    --secondary-foreground: var(--celo-white);
     --muted: var(--celo-tan-2);
-    --muted-foreground: 0 0% 20%;
+    --muted-foreground: var(--celo-brown);
     --accent: var(--celo-green);
     --accent-foreground: var(--celo-white);
-    --destructive: 0 84% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: var(--celo-white);
-    --border: 0 0% 0%; /* black borders */
+    --border: var(--celo-black); /* ALWAYS BLACK - VISIBLE STRUCTURE */
     --input: var(--celo-white);
     --ring: var(--celo-purple);
-    --radius: 0px; /* Unsoftened rectangles */
+    --radius: 0px; /* NO SOFTNESS - SHARP RECTANGLES ONLY */
 
-    /* Quiz-specific remap to high-contrast */
-    --quiz-correct: 103 65% 38%; /* deeper lime */
-    --quiz-incorrect: 0 84% 50%;
-    --quiz-neutral: 49 25% 86%;
-    --quiz-selected: 56 100% 66%;
+    /* POSTER-LIKE TYPOGRAPHY WEIGHTS */
+    --font-headline: 'GT Alpina', Georgia, serif; /* Architectural headlines */
+    --font-body: 'Inter', 'Helvetica Neue', sans-serif; /* Industrial signage */
+    --font-weight-headline-thin: 300;
+    --font-weight-headline-normal: 400;
+    --font-weight-body-normal: 400;
+    --font-weight-body-heavy: 750; /* For links and tags */
+    --font-weight-body-black: 900; /* For emphasis */
 
-    /* Stark, hard-edged gradient example */
-    --gradient-primary: linear-gradient(90deg, hsl(var(--celo-yellow)) 0 50%, hsl(var(--celo-black)) 50% 100%);
-    --gradient-card: linear-gradient(0deg, hsl(var(--celo-white)) 0%, hsl(var(--celo-white)) 100%);
-    --gradient-glow: linear-gradient(90deg, hsl(var(--celo-purple)) 0 50%, transparent 50% 100%);
+    /* STARK GRADIENTS - hard-edged transitions only */
+    --gradient-hero: linear-gradient(90deg, hsl(var(--celo-yellow)) 0% 40%, hsl(var(--celo-black)) 40% 100%);
+    --gradient-accent: linear-gradient(180deg, hsl(var(--celo-purple)) 0% 50%, hsl(var(--celo-green)) 50% 100%);
+    --gradient-invert: linear-gradient(90deg, hsl(var(--celo-black)) 0% 50%, hsl(var(--celo-yellow)) 50% 100%);
 
-    /* Minimal shadows; emphasis on strokes */
-    --shadow-glow: 0 0 0 rgba(0,0,0,0);
-    --shadow-card: 0 0 0 rgba(0,0,0,0);
-    --shadow-button: 0 0 0 rgba(0,0,0,0);
+    /* NO SHADOWS - EMPHASIS ON BOLD OUTLINES */
+    --shadow-none: 0 0 0 transparent;
+    --outline-thick: 4px solid hsl(var(--celo-black));
+    --outline-medium: 3px solid hsl(var(--celo-black));
+    --outline-thin: 2px solid hsl(var(--celo-black));
 
-    --transition-smooth: all 0.15s linear;
-    --transition-bounce: all 0.15s linear;
+    /* INSTANT TRANSITIONS - no smoothness, raw feedback */
+    --transition-instant: all 0.05s linear;
+    --transition-fast: all 0.1s linear;
 
-    --sidebar-background: var(--celo-white);
-    --sidebar-foreground: var(--celo-black);
-    --sidebar-primary: var(--celo-yellow);
-    --sidebar-primary-foreground: var(--celo-black);
-    --sidebar-accent: var(--celo-tan-2);
-    --sidebar-accent-foreground: var(--celo-black);
-    --sidebar-border: 0 0% 0%;
+    /* COLOR BLOCKS - for sectioning and visual hierarchy */
+    --block-yellow: var(--celo-yellow);
+    --block-green: var(--celo-green);
+    --block-purple: var(--celo-purple);
+    --block-black: var(--celo-black);
+    --block-white: var(--celo-white);
+
+    /* QUIZ SYSTEM - high contrast feedback */
+    --quiz-correct: 103 65% 35%; /* Strong green */
+    --quiz-incorrect: 0 90% 55%; /* Bold red */
+    --quiz-neutral: var(--celo-tan-2);
+    --quiz-selected: var(--celo-yellow);
+    --quiz-hover: var(--celo-purple);
   }
 }
 
@@ -170,58 +185,235 @@
 @layer base {
   * {
     border-color: hsl(var(--border));
+    box-sizing: border-box;
   }
 
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', Arial, sans-serif;
-    letter-spacing: 0.01em;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-body-normal);
+    letter-spacing: 0.005em; /* Tighter, more architectural */
     text-rendering: geometricPrecision;
     background-image: none;
+    line-height: 1.4; /* Industrial spacing */
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ARCHITECTURAL TYPOGRAPHY HIERARCHY */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headline);
+    font-weight: var(--font-weight-headline-thin);
+    letter-spacing: -0.02em; /* Tight headlines */
+    line-height: 1.1;
+    color: hsl(var(--foreground));
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 8vw, 6rem); /* Oversized */
+    font-weight: var(--font-weight-headline-thin);
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 5vw, 4rem);
+    font-weight: var(--font-weight-headline-thin);
+  }
+
+  h3 {
+    font-size: clamp(1.4rem, 4vw, 2.5rem);
+    font-weight: var(--font-weight-headline-normal);
+  }
+
+  /* INDUSTRIAL SIGNAGE BODY TEXT */
+  p, span, label {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-body-normal);
+    line-height: 1.5;
+    color: hsl(var(--foreground));
+    margin: 0;
+  }
+
+  /* HEAVY EMPHASIS ELEMENTS */
+  strong, b {
+    font-weight: var(--font-weight-body-black);
+  }
+
+  /* LINKS AS ARCHITECTURAL ELEMENTS */
+  a {
+    font-weight: var(--font-weight-body-heavy);
+    color: hsl(var(--foreground));
+    text-decoration: none;
+    border-bottom: 2px solid hsl(var(--celo-black));
+    transition: var(--transition-fast);
+  }
+
+  a:hover {
+    background: hsl(var(--celo-yellow));
+    color: hsl(var(--celo-black));
+    border-bottom-color: hsl(var(--celo-black));
+  }
+
+  /* REMOVE ALL ROUNDED CORNERS GLOBALLY */
+  * {
+    border-radius: 0 !important;
   }
 }
 
 @layer utilities {
-  /* Quiz-specific utility classes */
-  .quiz-glow {
-    box-shadow: var(--shadow-glow);
+  /* ARCHITECTURAL LAYOUT UTILITIES */
+  .color-block {
+    border: var(--outline-medium);
+    background: hsl(var(--block-white));
+    display: block;
   }
 
-  .quiz-card {
-    background: var(--gradient-card);
-    box-shadow: var(--shadow-card);
+  .color-block-yellow {
+    background: hsl(var(--block-yellow));
+    color: hsl(var(--celo-black));
   }
 
-  .quiz-button-glow {
-    box-shadow: var(--shadow-button);
+  .color-block-green {
+    background: hsl(var(--block-green));
+    color: hsl(var(--celo-white));
   }
 
-  /* Animation classes for gamification */
-  .animate-pulse-glow {
-    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .color-block-purple {
+    background: hsl(var(--block-purple));
+    color: hsl(var(--celo-white));
   }
 
-  .animate-bounce-in {
-    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  .color-block-black {
+    background: hsl(var(--block-black));
+    color: hsl(var(--celo-yellow));
   }
 
-  .animate-shake {
-    animation: shake 0.5s ease-in-out;
+  /* POSTER-LIKE SECTIONS */
+  .poster-section {
+    min-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--outline-thick);
+    background: hsl(var(--background));
   }
 
-  .animate-celebrate {
-    animation: celebrate 1s ease-in-out;
+  /* INDUSTRIAL BUTTONS */
+  .btn-industrial {
+    border: var(--outline-medium);
+    padding: 1rem 2rem;
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-body-black);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    background: hsl(var(--celo-white));
+    color: hsl(var(--celo-black));
   }
 
-  .bg-gradient-primary {
-    background: var(--gradient-primary);
+  .btn-industrial:hover {
+    background: hsl(var(--celo-yellow));
+    color: hsl(var(--celo-black));
   }
 
-  .bg-gradient-card { background: var(--gradient-card); }
+  .btn-primary-industrial {
+    background: hsl(var(--celo-yellow));
+    color: hsl(var(--celo-black));
+    border: var(--outline-medium);
+  }
 
-  .bg-gradient-glow {
-    background: var(--gradient-glow);
+  .btn-primary-industrial:hover {
+    background: hsl(var(--celo-black));
+    color: hsl(var(--celo-yellow));
+  }
+
+  /* STARK GRADIENTS */
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .bg-gradient-invert {
+    background: var(--gradient-invert);
+  }
+
+  /* TYPOGRAPHY UTILITIES */
+  .text-headline-thin {
+    font-family: var(--font-headline);
+    font-weight: var(--font-weight-headline-thin);
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline-italic {
+    font-family: var(--font-headline);
+    font-weight: var(--font-weight-headline-thin);
+    font-style: italic;
+    letter-spacing: -0.02em;
+  }
+
+  .text-body-heavy {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-body-heavy);
+  }
+
+  .text-body-black {
+    font-family: var(--font-body);
+    font-weight: var(--font-weight-body-black);
+  }
+
+  /* QUIZ SYSTEM UTILITIES */
+  .quiz-card-raw {
+    background: hsl(var(--celo-white));
+    border: var(--outline-thick);
+    padding: 2rem;
+  }
+
+  .quiz-option-raw {
+    background: hsl(var(--celo-white));
+    border: var(--outline-medium);
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    transition: var(--transition-instant);
+    font-weight: var(--font-weight-body-heavy);
+  }
+
+  .quiz-option-raw:hover {
+    background: hsl(var(--celo-yellow));
+    color: hsl(var(--celo-black));
+  }
+
+  .quiz-option-selected {
+    background: hsl(var(--quiz-selected));
+    color: hsl(var(--celo-black));
+  }
+
+  .quiz-option-correct {
+    background: hsl(var(--quiz-correct));
+    color: hsl(var(--celo-white));
+  }
+
+  .quiz-option-incorrect {
+    background: hsl(var(--quiz-incorrect));
+    color: hsl(var(--celo-white));
+  }
+
+  /* ANIMATION CLASSES */
+  .animate-bounce-raw {
+    animation: bounce-raw 0.3s linear;
+  }
+
+  .animate-flash-raw {
+    animation: flash-raw 0.2s linear;
+  }
+
+  .animate-shake-raw {
+    animation: shake-raw 0.4s linear;
   }
 
   .text-primary {
@@ -270,43 +462,44 @@
 }
 
 @layer base {
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 0 20px hsl(144 61% 55% / 0.3);
-    }
-    50% {
-      box-shadow: 0 0 40px hsl(144 61% 55% / 0.6);
-    }
+  /* RAW ANIMATIONS - sharp, immediate feedback */
+  @keyframes bounce-raw {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
   }
 
-  @keyframes bounce-in {
+  @keyframes flash-raw {
+    0% { background: hsl(var(--celo-white)); }
+    50% { background: hsl(var(--celo-yellow)); }
+    100% { background: hsl(var(--celo-white)); }
+  }
+
+  @keyframes shake-raw {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+  }
+
+  @keyframes color-invert {
     0% {
-      transform: scale(0.3) translateY(20px);
-      opacity: 0;
+      background: hsl(var(--celo-white));
+      color: hsl(var(--celo-black));
     }
     50% {
-      transform: scale(1.05);
-    }
-    70% {
-      transform: scale(0.95);
+      background: hsl(var(--celo-black));
+      color: hsl(var(--celo-yellow));
     }
     100% {
-      transform: scale(1) translateY(0);
-      opacity: 1;
+      background: hsl(var(--celo-white));
+      color: hsl(var(--celo-black));
     }
   }
 
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
-  }
-
-  @keyframes celebrate {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    25% { transform: scale(1.1) rotate(-5deg); }
-    50% { transform: scale(1.2) rotate(5deg); }
-    75% { transform: scale(1.1) rotate(-2deg); }
+  @keyframes slide-block {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(0); }
   }
 }
 
@@ -383,8 +576,8 @@
 }
 
 .quiz-option-btn:hover:not(:disabled) {
-  background: hsl(var(--celo-black));
-  color: hsl(var(--celo-yellow));
+  background: hsl(var(--celo-yellow));
+  color: hsl(var(--celo-black));
 }
 
 .quiz-option-btn.selected {

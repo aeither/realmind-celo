@@ -3,11 +3,44 @@ import GlobalHeader from '../components/GlobalHeader'
 
 export const Route = createRootRoute({
   component: () => (
-    <div style={{ minHeight: '100vh' }}>
+    <div style={{ 
+      minHeight: '100vh',
+      background: 'hsl(var(--background))',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
+    }}>
       <GlobalHeader />
-      <div style={{ paddingTop: 'clamp(60px, 15vw, 80px)' }}>
+      <main style={{ 
+        flex: '1',
+        paddingTop: 'clamp(90px, 12vw, 120px)',
+        paddingBottom: 'clamp(100px, 15vw, 140px)',
+        position: 'relative',
+        background: 'hsl(var(--background))',
+        minHeight: 'calc(100vh - 160px)'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'var(--gradient-hero)',
+          zIndex: 1
+        }}></div>
         <Outlet />
-      </div>
+      </main>
+      <div style={{
+        position: 'fixed',
+        bottom: '100px',
+        right: '20px',
+        width: '8px',
+        height: '60px',
+        background: 'hsl(var(--celo-purple))',
+        border: 'var(--outline-thin)',
+        zIndex: 10,
+        display: 'none'
+      }} className="hidden lg:block"></div>
     </div>
   ),
 })

@@ -62,18 +62,57 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-6 duration-200 sm:max-w-lg",
           className
         )}
+        style={{
+          background: 'hsl(var(--celo-white))',
+          border: 'var(--outline-thick)',
+          padding: '2rem',
+          position: 'relative'
+        }}
         {...props}
       >
+        <div style={{
+          position: 'absolute',
+          top: '15px',
+          left: '15px',
+          width: '40px',
+          height: '6px',
+          background: 'hsl(var(--celo-yellow))'
+        }}></div>
+        
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="btn-industrial"
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '1rem',
+              background: 'hsl(var(--celo-black))',
+              color: 'hsl(var(--celo-white))',
+              border: 'var(--outline-thin)',
+              padding: '0.5rem 0.8rem',
+              fontSize: '0.8rem',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 'var(--font-weight-body-black)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              cursor: 'pointer',
+              transition: 'var(--transition-fast)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--celo-yellow))';
+              e.currentTarget.style.color = 'hsl(var(--celo-black))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'hsl(var(--celo-black))';
+              e.currentTarget.style.color = 'hsl(var(--celo-white))';
+            }}
           >
-            <XIcon />
+            CLOSE
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -112,7 +151,16 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("text-headline-thin", className)}
+      style={{
+        fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+        fontFamily: 'var(--font-headline)',
+        fontWeight: 'var(--font-weight-headline-thin)',
+        letterSpacing: '-0.02em',
+        textTransform: 'uppercase',
+        color: 'hsl(var(--celo-black))',
+        marginBottom: '1rem'
+      }}
       {...props}
     />
   )
@@ -125,7 +173,16 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-body-heavy", className)}
+      style={{
+        fontSize: '0.9rem',
+        fontFamily: 'var(--font-body)',
+        fontWeight: 'var(--font-weight-body-heavy)',
+        color: 'hsl(var(--celo-brown))',
+        textTransform: 'uppercase',
+        letterSpacing: '0.01em',
+        lineHeight: '1.4'
+      }}
       {...props}
     />
   )

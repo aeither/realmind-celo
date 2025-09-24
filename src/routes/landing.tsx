@@ -5,34 +5,93 @@ function LandingPage() {
   return (
     <motion.div className="min-h-screen bg-background" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
       <div className="max-w-6xl mx-auto p-8">
-        {/* Hero Section */}
-        <motion.div className="text-center py-16 quiz-card rounded-3xl mb-12" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-          <motion.div className="text-8xl mb-6" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6, delay: 0.1 }}>🏛️</motion.div>
-          <h1 className="text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-            Welcome to Realmind
+        {/* Hero Section - Poster-like */}
+        <motion.div className="poster-section" style={{ 
+          textAlign: "left", 
+          padding: "clamp(4rem, 10vw, 8rem)", 
+          marginBottom: "4rem",
+          background: "var(--gradient-hero)",
+          position: "relative"
+        }} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4 }}>
+          <div style={{
+            position: "absolute",
+            top: "30px",
+            left: "30px",
+            fontSize: "4rem",
+            opacity: 0.3
+          }}>🏛️</div>
+          
+          <h1 className="text-headline-thin" style={{
+            fontSize: "clamp(3rem, 10vw, 8rem)",
+            marginBottom: "2rem",
+            color: "hsl(var(--celo-white))",
+            textTransform: "uppercase",
+            letterSpacing: "-0.03em"
+          }}>
+            Welcome to <span style={{ fontStyle: "italic" }}>Real</span>mind
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Master blockchain knowledge through gamified quizzes and earn real rewards on Celo and Base networks.
-            Challenge yourself, climb leaderboards, and get rewarded for learning!
-          </p>
-          <motion.div className="flex gap-4 justify-center flex-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          
+          <div className="color-block-yellow" style={{
+            padding: "2rem 3rem",
+            marginBottom: "3rem",
+            maxWidth: "700px"
+          }}>
+            <p className="text-body-heavy" style={{
+              fontSize: "clamp(1rem, 2.5vw, 1.5rem)",
+              color: "hsl(var(--celo-black))",
+              textTransform: "uppercase",
+              letterSpacing: "0.01em",
+              lineHeight: "1.3"
+            }}>
+              Master blockchain knowledge through gamified quizzes and earn real rewards on Celo networks
+            </p>
+          </div>
+          
+          <motion.div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
             <Link
               to="/contract"
-              className="px-8 py-4 bg-gradient-primary text-primary-foreground rounded-2xl text-lg font-semibold 
-                         quiz-button-glow hover:scale-105 transition-all duration-300 animate-bounce-in"
-              style={{ animationDelay: '200ms' }}
+              className="btn-primary-industrial"
+              style={{
+                padding: "1.5rem 3rem",
+                fontSize: "1.1rem",
+                fontFamily: "var(--font-body)",
+                fontWeight: "var(--font-weight-body-black)",
+                textTransform: "uppercase",
+                letterSpacing: "0.02em",
+                textDecoration: "none",
+                transition: "var(--transition-fast)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "hsl(var(--celo-yellow))";
+                e.currentTarget.style.color = "hsl(var(--celo-black))";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "hsl(var(--celo-black))";
+                e.currentTarget.style.color = "hsl(var(--celo-yellow))";
+              }}
             >
-              🎮 Start Playing
+              🎮 START PLAYING
             </Link>
 
             <Link
               to="/contract"
-              className="px-6 py-3 bg-muted text-muted-foreground border border-border rounded-xl 
-                         text-base font-medium hover:bg-secondary hover:text-foreground hover:scale-105 
-                         transition-all duration-300 animate-bounce-in"
-              style={{ animationDelay: '600ms' }}
+              className="btn-industrial"
+              style={{
+                padding: "1.5rem 2.5rem",
+                fontSize: "1rem",
+                textDecoration: "none",
+                transition: "var(--transition-fast)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "hsl(var(--celo-yellow))";
+                e.currentTarget.style.color = "hsl(var(--celo-black))";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "hsl(var(--celo-white))";
+                e.currentTarget.style.color = "hsl(var(--celo-black))";
+              }}
             >
-              🔧 Debug
+              🔧 DEBUG
             </Link>
           </motion.div>
         </motion.div>
@@ -104,14 +163,53 @@ function FeatureCard({ icon, title, description, delay }: {
 }) {
   return (
     <div
-      className="quiz-card rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 animate-bounce-in group"
-      style={{ animationDelay: delay }}
+      className="quiz-card-raw"
+      style={{ 
+        animationDelay: delay,
+        textAlign: "left",
+        background: "hsl(var(--celo-white))",
+        cursor: "pointer",
+        transition: "var(--transition-fast)",
+        position: "relative"
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "hsl(var(--celo-yellow))";
+        e.currentTarget.style.color = "hsl(var(--celo-black))";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "hsl(var(--celo-white))";
+        e.currentTarget.style.color = "hsl(var(--celo-black))";
+      }}
     >
-      <div className="text-5xl mb-4 group-hover:animate-celebrate">{icon}</div>
-      <h3 className="text-xl font-bold text-primary mb-3">
+      <div style={{
+        position: "absolute",
+        top: "15px",
+        right: "15px",
+        width: "15px",
+        height: "3px",
+        background: "hsl(var(--celo-yellow))"
+      }}></div>
+      
+      <div style={{ 
+        fontSize: "2.5rem", 
+        marginBottom: "1.5rem",
+        fontWeight: "var(--font-weight-body-black)"
+      }}>{icon}</div>
+      
+      <h3 className="text-body-black" style={{
+        fontSize: "clamp(1.1rem, 2vw, 1.3rem)",
+        marginBottom: "1rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.02em"
+      }}>
         {title}
       </h3>
-      <p className="text-muted-foreground leading-relaxed text-sm">
+      
+      <p className="text-body-heavy" style={{
+        fontSize: "0.8rem",
+        lineHeight: "1.4",
+        opacity: 0.8
+      }}>
         {description}
       </p>
     </div>
