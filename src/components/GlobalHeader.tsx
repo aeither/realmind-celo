@@ -106,7 +106,7 @@ function GlobalHeader({
             lineHeight: 1
           }}
         >
-          Realmind <em style={{ fontStyle: 'italic' }}>Celo</em>
+          Realmind
         </Link>
         </motion.div>
       </div>
