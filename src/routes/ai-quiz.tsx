@@ -1,3 +1,5 @@
+// AI Quiz functionality temporarily disabled
+/*
 import { createFileRoute } from '@tanstack/react-router'
 import GlobalHeader from '../components/GlobalHeader'
 import AIQuizGenerator from '../components/AIQuizGenerator'
@@ -37,6 +39,21 @@ function AIQuizPage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+    </div>
+  )
+}
+
+export const Route = createFileRoute('/ai-quiz')({
+  component: AIQuizPage,
+})
+*/
+
+// Temporary placeholder component
+function AIQuizPage() {
+  return (
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <h2>AI Quiz Generator</h2>
+      <p>This feature is temporarily disabled.</p>
     </div>
   )
 }

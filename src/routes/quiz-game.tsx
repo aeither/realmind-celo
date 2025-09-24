@@ -16,70 +16,136 @@ interface QuizSearchParams {
   data?: string
 }
 
-// Quiz configurations
+// Quiz configurations - CELO focused
 const QUIZ_CONFIGS = {
-  'web3-basics': {
-    id: 'web3-basics',
-    title: 'Web3 Basics',
-    description: 'Test your knowledge of blockchain fundamentals',
+  'celo-basics': {
+    id: 'celo-basics',
+    title: 'CELO Basics',
+    description: 'Learn the fundamentals of CELO blockchain',
     questions: [
       {
-        question: "What is the primary purpose of a blockchain?",
-        options: ["To store data", "To create a decentralized, immutable ledger", "To process payments", "To host websites"],
+        question: "What is CELO?",
+        options: ["A Bitcoin fork", "An Ethereum Layer 2 built for real-world payments", "A centralized exchange", "A mining protocol"],
         correct: 1
       },
       {
-        question: "What does 'HODL' mean in cryptocurrency?",
-        options: ["Hold On for Dear Life", "Hold", "High Order Data Logic", "Hash of Digital Ledger"],
+        question: "What is CELO's main focus?",
+        options: ["NFT trading", "Fast, low-cost payments worldwide", "Gaming applications", "Enterprise solutions only"],
         correct: 1
       },
       {
-        question: "What is a smart contract?",
-        options: ["A legal document", "Self-executing code on blockchain", "A cryptocurrency", "A wallet"],
+        question: "Is CELO EVM compatible?",
+        options: ["No, it uses a different virtual machine", "Yes, it's fully EVM-compatible", "Partially compatible", "Only for smart contracts"],
         correct: 1
       }
     ]
   },
-  'crypto-trading': {
-    id: 'crypto-trading',
-    title: 'Crypto Trading',
-    description: 'Learn about trading strategies, market analysis, and risk management',
+  'celo-l2-transition': {
+    id: 'celo-l2-transition',
+    title: 'CELO L2 Transition',
+    description: 'Understanding CELO\'s evolution from L1 to L2',
     questions: [
       {
-        question: "What is a 'bull market' in cryptocurrency?",
-        options: ["A market where prices are falling", "A market where prices are rising", "A market with high volatility", "A market with low trading volume"],
+        question: "When did CELO L2 Mainnet officially launch?",
+        options: ["March 26, 2024", "March 26, 2025", "February 20, 2025", "October 2024"],
         correct: 1
       },
       {
-        question: "What does 'FOMO' stand for in trading?",
-        options: ["Fear of Missing Out", "Fear of Market Order", "Fast Order Market Option", "Financial Order Management"],
-        correct: 0
+        question: "What was CELO before becoming a Layer 2?",
+        options: ["A sidechain", "An Ethereum token", "A standalone EVM-compatible Layer 1 blockchain", "A centralized database"],
+        correct: 2
       },
       {
-        question: "What is 'DCA' in cryptocurrency trading?",
-        options: ["Daily Crypto Analysis", "Dollar Cost Averaging", "Digital Currency Arbitrage", "Direct Crypto Access"],
+        question: "What is the block finality time on CELO L2?",
+        options: ["5 seconds", "1 second", "15 seconds", "30 seconds"],
         correct: 1
       }
     ]
   },
-  'defi-protocols': {
-    id: 'defi-protocols',
-    title: 'DeFi Protocols',
-    description: 'Explore decentralized finance protocols, yield farming, and liquidity pools',
+  'celo-features': {
+    id: 'celo-features',
+    title: 'CELO Features',
+    description: 'Explore CELO\'s unique features and capabilities',
     questions: [
       {
-        question: "What is 'yield farming' in DeFi?",
-        options: ["Growing crops on blockchain", "Earning rewards by providing liquidity", "Mining cryptocurrency", "Trading tokens"],
+        question: "What does CELO's Fee Abstraction enable?",
+        options: ["Free transactions", "Pay fees in any token", "Higher gas limits", "Faster confirmations"],
         correct: 1
       },
       {
-        question: "What is an 'AMM' in DeFi?",
-        options: ["Automated Market Maker", "Advanced Mining Method", "Asset Management Module", "Automated Money Market"],
+        question: "What are CELO's native stablecoins?",
+        options: ["Only USDC", "cUSD, cEUR, cREAL and others", "Only USDT", "No native stablecoins"],
+        correct: 1
+      },
+      {
+        question: "How many real-world users does CELO provide access to?",
+        options: ["1 million", "5 million", "More than 8 million", "100,000"],
+        correct: 2
+      }
+    ]
+  },
+  'celo-development': {
+    id: 'celo-development',
+    title: 'Building on CELO',
+    description: 'Learn about developing applications on CELO',
+    questions: [
+      {
+        question: "What tool helps you get started building on CELO quickly?",
+        options: ["CELO Composer CLI", "Truffle", "Hardhat only", "Remix IDE"],
         correct: 0
       },
       {
-        question: "What is 'impermanent loss'?",
-        options: ["Loss from holding tokens too long", "Loss from providing liquidity to pools", "Loss from trading fees", "Loss from network fees"],
+        question: "Where can developers get testnet tokens for CELO?",
+        options: ["Mining", "CELO Faucet", "Buying on exchanges", "Staking"],
+        correct: 1
+      },
+      {
+        question: "What is MiniPay?",
+        options: ["A DeFi protocol", "A mobile payment app built on CELO", "A staking mechanism", "A bridge protocol"],
+        correct: 1
+      }
+    ]
+  },
+  'celo-ecosystem': {
+    id: 'celo-ecosystem',
+    title: 'CELO Ecosystem',
+    description: 'Discover funding and community opportunities in CELO',
+    questions: [
+      {
+        question: "What is the CELO Camp?",
+        options: ["A mining facility", "The ecosystem's flagship accelerator", "A staking pool", "A governance token"],
+        correct: 1
+      },
+      {
+        question: "What is Proof of Ship in the CELO ecosystem?",
+        options: ["A consensus mechanism", "A way to build onchain reputation for rewards", "A shipping protocol", "A token bridge"],
+        correct: 1
+      },
+      {
+        question: "What percentage fee typically applies for transaction costs on CELO?",
+        options: ["High gas fees like Ethereum mainnet", "Sub-cent fees", "Fixed $1 per transaction", "No fees at all"],
+        correct: 1
+      }
+    ]
+  },
+  'celo-ai-agents': {
+    id: 'celo-ai-agents',
+    title: 'AI on CELO',
+    description: 'Learn about AI applications and agents on CELO',
+    questions: [
+      {
+        question: "What can you build with AI on CELO?",
+        options: ["Only chatbots", "AI agents, MCP servers, and intelligent applications", "Only data analysis tools", "Mining algorithms"],
+        correct: 1
+      },
+      {
+        question: "What advantage do AI agents provide for blockchain interactions?",
+        options: ["Higher transaction fees", "Making blockchain interactions more accessible and user-friendly", "Slower processing", "More complexity"],
+        correct: 1
+      },
+      {
+        question: "According to the CELO AI documentation, what can AI agents help with?",
+        options: ["Only token swaps", "24/7 market participation, scam detection, and easier onchain transactions", "Only wallet management", "Only price predictions"],
         correct: 1
       }
     ]
@@ -126,10 +192,10 @@ function QuizGame() {
   // Handle AI-generated quizzes
   let quizConfig = null
   
-  // Redirect ai-generated to web3-basics (default fallback)
+  // Redirect ai-generated to celo-basics (default fallback)
   if (quizId === 'ai-generated') {
-    toast.info('Redirecting to Web3 Basics quiz...')
-    navigate({ to: '/quiz-game', search: { quiz: 'web3-basics' } })
+    toast.info('Redirecting to CELO Basics quiz...')
+    navigate({ to: '/quiz-game', search: { quiz: 'celo-basics' } })
     return null
   }
   
@@ -815,10 +881,10 @@ function QuizGame() {
   }
 
   // If quiz is active and user has started it, show current question
-  // Special case: Allow web3-basics to start immediately when user has AI session (no payment needed)
-  const shouldStartWebBasicsForAiSession = hasActiveQuiz && activeQuizId === 'ai-generated' && quizId === 'web3-basics'
+  // Special case: Allow celo-basics to start immediately when user has AI session (no payment needed)
+  const shouldStartCeloBasicsForAiSession = hasActiveQuiz && activeQuizId === 'ai-generated' && quizId === 'celo-basics'
   
-  if ((isStartSuccess || (hasActiveQuiz && activeQuizId === quizId) || shouldStartWebBasicsForAiSession) && quizConfig && !quizCompleted) {
+  if ((isStartSuccess || (hasActiveQuiz && activeQuizId === quizId) || shouldStartCeloBasicsForAiSession) && quizConfig && !quizCompleted) {
     const currentQuestion = quizConfig.questions[currentQuestionIndex]
     
     return (
