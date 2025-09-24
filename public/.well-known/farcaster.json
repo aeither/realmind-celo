@@ -1,0 +1,41 @@
+{
+  "frame": {
+    "name": "Realmind",
+    "version": "1",
+    "iconUrl": "https://realmind-mini.dailywiser.xyz/icon.png",
+    "homeUrl": "https://realmind-mini.dailywiser.xyz",
+    "imageUrl": "https://realmind-mini.dailywiser.xyz/icon.png",
+    "splashImageUrl": "https://realmind-mini.dailywiser.xyz/icon.png",
+    "splashBackgroundColor": "#FFC117",
+    "webhookUrl": "https://realmind-mini.dailywiser.xyz/api/webhook",
+    "subtitle": "Interactive Learning",
+    "description": "Test your knowledge and earn rewards on Hyperion Testnet with interactive quiz games.",
+    "primaryCategory": "education",
+    "screenshotUrls": [
+      "https://realmind-mini.dailywiser.xyz/icon.png"
+    ],
+    "tags": [
+      "quiz",
+      "learning",
+      "education",
+      "blockchain",
+      "rewards"
+    ],
+    "heroImageUrl": "https://realmind-mini.netlify.app/quiz-preview.jpeg",
+    "tagline": "Learn & Earn",
+    "ogTitle": "Realmind - Interactive Learning",
+    "ogDescription": "Test your knowledge and earn rewards on Hyperion Testnet!",
+    "ogImageUrl": "https://realmind-mini.dailywiser.xyz/icon.png",
+    "noindex": false
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjIxNjM4MywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDIxNEQxNzJDMERjNjBmQTUxNERmOTU0QTgyOGJjQzU1MkJlMzA4MTUifQ",
+    "payload": "eyJkb21haW4iOiJyZWFsbWluZC1taW5pLmRhaWx5d2lzZXIueHl6In0",
+    "signature": "MHg0ZmQzMjg3M2UxNmViNDM4ODJlNmI0YTczMjgzMjQwYzY5ODVjYmFmNGMxZTg5N2M0NTQ1YWUzZTQxOTgwYTQxNWUwMjJkMTZmNjUyNDEyYjFmM2Q1NDcwNmU5NmZiOTM1ZDllZTAwNGE2YmIxYTI2MzBiOGVhMWIzY2RkY2FiODFj"
+  },
+  "baseBuilder": {
+    "allowedAddresses": [
+      "0x1eA091521DC4A2035a586995f9fB7ca7b0F646ad"
+    ]
+  }
+}
