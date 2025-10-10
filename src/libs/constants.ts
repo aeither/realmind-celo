@@ -33,11 +33,16 @@ const REWARDS_CONFIG = {
   },
   // Celo
   42220: {
-    totalReward: 0, 
+    totalReward: 0,
     currency: "CELO",
     symbol: "🟡",
     maxWinners: 10,
     seasonEndDate: undefined // Celo season ends December 31, 2025
+    // totalReward: 250,
+    // currency: "CELO",
+    // symbol: "🟡",
+    // maxWinners: 50,
+    // seasonEndDate: new Date("2025-10-27T23:59:59Z") // Celo season ends October 27, 2025
   },
   // EDU Chain
   41923: {
