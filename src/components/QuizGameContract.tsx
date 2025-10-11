@@ -5,6 +5,7 @@ import { useAccount, useDisconnect, useReadContract, useSwitchChain, useWaitForT
 import { getContractAddresses } from '../libs/constants';
 import { quizGameABI } from '../libs/quizGameABI';
 import { SUPPORTED_CHAIN, SUPPORTED_CHAINS, CURRENCY_CONFIG } from '../libs/supportedChains';
+import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral';
 
 // Available quiz configurations
 const QUIZ_CONFIGS = {
@@ -92,8 +93,13 @@ function QuizGameContract() {
   useEffect(() => {
     if (isCompleteSuccess) {
       toast.success('Rewards claimed! Check your wallet 🎁');
+      
+      // Submit to Divvi for referral tracking
+      if (completeHash && chain) {
+        submitDivviReferral(completeHash, chain.id);
+      }
     }
-  }, [isCompleteSuccess]);
+  }, [isCompleteSuccess, completeHash, chain]);
 
 
 
@@ -228,12 +234,13 @@ function QuizGameContract() {
             </Link>
             <button
               onClick={() => {
-                if (!contractAddresses) return;
+                if (!contractAddresses || !address) return;
                 completeQuiz({
                   address: contractAddresses.quizGameContractAddress as `0x${string}`,
                   abi: quizGameABI,
                   functionName: 'completeQuiz',
                   args: [BigInt(Math.floor(Math.random() * 100) + 1)],
+                  dataSuffix: getDivviDataSuffix(address),
                 });
               }}
               disabled={isCompletePending}

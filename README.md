@@ -25,6 +25,7 @@ Realmind creates a gamified learn-to-earn ecosystem on Celo where users:
 - **Frontend**: React 18, TypeScript, TanStack Router, Tailwind CSS 4
 - **Blockchain**: Wagmi, Viem, OnchainKit
 - **Social**: Farcaster MiniApp SDK
+- **Referral Tracking**: Divvi Referral SDK
 - **Smart Contracts**: Multiple quiz game contracts with reward distribution
 - **State**: TanStack Query, Socket.io
 
@@ -60,3 +61,24 @@ pnpm build
 - Score-based multipliers
 - Seasonal leaderboard bonuses
 - Transparent smart contract distribution
+
+## Divvi Referral Integration
+
+This dapp is integrated with [Divvi's referral ecosystem](https://divvi.xyz) to enable decentralized referral tracking and attribution.
+
+### How It Works
+
+All quiz game transactions (starting quizzes and claiming rewards) include Divvi referral metadata:
+
+1. **On-Chain Attribution**: Referral data is embedded in transaction calldata using the `dataSuffix` parameter
+2. **Automatic Tracking**: Transaction hashes are automatically submitted to Divvi's attribution API after successful transactions
+3. **Consumer Address**: `0x8e7eBE53b6ad215E395f3f17d43C3b75062DfDa1`
+
+### Benefits
+
+- Transparent referral tracking on the Celo blockchain
+- Accurate attribution of user activities
+- Support for referral rewards and incentives
+- No additional user interaction required
+
+For more information about Divvi, visit [docs.divvi.xyz](https://docs.divvi.xyz/).

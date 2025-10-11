@@ -9,6 +9,7 @@ import { getContractAddresses } from '../libs/constants'
 import { SUPPORTED_CHAIN, SUPPORTED_CHAINS, CURRENCY_CONFIG } from '../libs/supportedChains'
 import GlobalHeader from '../components/GlobalHeader'
 import { AIQuizGenerator } from '../libs/aiQuizGenerator'
+import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral'
 
 interface QuizSearchParams {
   quiz?: string
@@ -295,12 +296,15 @@ function QuizGame() {
 
   // Effects
   useEffect(() => {
-    if (isStartSuccess) {
+    if (isStartSuccess && startHash && chain) {
       toast.success(isAiChallengeMode ? 'AI Challenge started! Beat the bot! 🤖' : 'Quiz started! Good luck! 🎮')
       // Start the quiz timer only after transaction success
       setQuizStarted(true)
+      
+      // Submit to Divvi for referral tracking
+      submitDivviReferral(startHash, chain.id)
     }
-  }, [isStartSuccess, isAiChallengeMode])
+  }, [isStartSuccess, isAiChallengeMode, startHash, chain])
 
   useEffect(() => {
     if (isCompleteSuccess) {
@@ -312,10 +316,15 @@ function QuizGame() {
       }
       setJustCompletedQuiz(true) // Mark that user just completed a quiz
       
+      // Submit to Divvi for referral tracking
+      if (completeHash && chain) {
+        submitDivviReferral(completeHash, chain.id)
+      }
+      
       // Navigate to home page immediately after successful claim
       navigate({ to: '/' })
     }
-  }, [isCompleteSuccess, navigate, isCompletingAiSession])
+  }, [isCompleteSuccess, navigate, isCompletingAiSession, completeHash, chain])
 
   // Reset the justCompletedQuiz flag after 10 seconds to prevent permanent bypass
   useEffect(() => {
@@ -356,6 +365,7 @@ function QuizGame() {
         functionName: 'startQuiz',
         args: [contractQuizId, expectedCorrectAnswers],
         value: actualAmount,
+        dataSuffix: getDivviDataSuffix(address),
       })
     } catch (error) {
       console.error('Error in handleStartQuiz:', error)
@@ -445,6 +455,7 @@ function QuizGame() {
       abi: quizGameABI,
       functionName: 'completeQuiz',
       args: [correctAnswerCount],
+      dataSuffix: getDivviDataSuffix(address),
     })
   }
   
@@ -577,6 +588,7 @@ function QuizGame() {
       abi: quizGameABI,
       functionName: 'completeQuiz',
       args: [correctAnswerCount],
+      dataSuffix: address ? getDivviDataSuffix(address) : '0x',
     })
   }
   
