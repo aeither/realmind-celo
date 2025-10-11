@@ -157,12 +157,12 @@ function DemoPage() {
     {
       id: 4,
       title: "NFT Quiz",
-      description: "Complete the final quiz and claim rewards",
+      description: "Complete the final quiz and collect XP",
       completed: completedTasks.includes(4),
       component: (
         <div className="text-center">
           <h3 className="text-xl font-bold mb-4">🎨 NFT Quiz Demo</h3>
-          <p className="mb-4">Complete quiz and claim rewards</p>
+          <p className="mb-4">Complete quiz and collect XP</p>
           <button
             onClick={handleCompleteQuiz}
             disabled={isCompletePending}

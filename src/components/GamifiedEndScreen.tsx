@@ -300,7 +300,7 @@ function GamifiedEndScreen({
                 }
               }}
             >
-              {isClaiming ? "Claiming..." : "🎁 Claim Rewards"}
+              {isClaiming ? "Collecting..." : "🎁 Collect XP"}
             </button>
           )}
 

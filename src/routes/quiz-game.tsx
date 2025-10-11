@@ -312,7 +312,7 @@ function QuizGame() {
         toast.success('AI session completed successfully!')
         setIsCompletingAiSession(false) // Reset the flag
       } else {
-        toast.success('Rewards claimed! Check your wallet 🎁')
+        toast.success('XP collected! Check your wallet 🎁')
       }
       setJustCompletedQuiz(true) // Mark that user just completed a quiz
       
@@ -564,7 +564,7 @@ function QuizGame() {
   }
 
   // Check if user has an active quiz session but for a different quiz
-  // Don't show blocking screen if user just completed a quiz (prevents showing after claiming rewards)
+  // Don't show blocking screen if user just completed a quiz (prevents showing after collecting XP)
   const shouldSkipDueToCompletion = justCompletedQuiz
   
   // Don't show blocking screen during transaction processing (user should see completion screen with "Claiming..." status)
@@ -780,7 +780,7 @@ function QuizGame() {
                       opacity: isCompleteTransactionPending ? 0.6 : 1
                     }}
                   >
-                    {isCompleteTransactionPending ? (isCompletePending ? "Confirm in wallet..." : "Confirming on blockchain...") : "🎁 Claim Rewards"}
+                    {isCompleteTransactionPending ? (isCompletePending ? "Confirm in wallet..." : "Confirming on blockchain...") : "🎁 Collect XP"}
                   </button>
                 </>
               )}
@@ -820,7 +820,7 @@ function QuizGame() {
                       opacity: isCompleteTransactionPending ? 0.6 : 1
                     }}
                   >
-                    {isCompleteTransactionPending ? (isCompletePending ? "Confirm in wallet..." : "Confirming on blockchain...") : "🎁 Claim Rewards"}
+                    {isCompleteTransactionPending ? (isCompletePending ? "Confirm in wallet..." : "Confirming on blockchain...") : "🎁 Collect XP"}
                   </button>
                 </>
               )}
@@ -883,7 +883,7 @@ function QuizGame() {
                   opacity: isCompletePending ? 0.6 : 1
                 }}
               >
-                {isCompletePending ? "Claiming..." : "🎁 Claim Rewards"}
+                {isCompletePending ? "Collecting..." : "🎁 Collect XP"}
               </button>
             </div>
           </div>

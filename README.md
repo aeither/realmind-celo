@@ -68,7 +68,7 @@ This dapp is integrated with [Divvi's referral ecosystem](https://divvi.xyz) to 
 
 ### How It Works
 
-All quiz game transactions (starting quizzes and claiming rewards) include Divvi referral metadata:
+All quiz game transactions (starting quizzes and collecting XP) include Divvi referral metadata:
 
 1. **On-Chain Attribution**: Referral data is embedded in transaction calldata using the `dataSuffix` parameter
 2. **Automatic Tracking**: Transaction hashes are automatically submitted to Divvi's attribution API after successful transactions
