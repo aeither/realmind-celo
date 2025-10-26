@@ -24,6 +24,7 @@ Realmind creates a gamified learn-to-earn ecosystem on Celo where users:
 
 - **Frontend**: React 18, TypeScript, TanStack Router, Tailwind CSS 4
 - **Blockchain**: Wagmi, Viem, OnchainKit
+- **Identity**: Self Protocol (privacy-preserving verification)
 - **Social**: Farcaster MiniApp SDK
 - **Referral Tracking**: Divvi Referral SDK
 - **Smart Contracts**: Multiple quiz game contracts with reward distribution
@@ -82,3 +83,32 @@ All quiz game transactions (starting quizzes and collecting XP) include Divvi re
 - No additional user interaction required
 
 For more information about Divvi, visit [docs.divvi.xyz](https://docs.divvi.xyz/).
+
+## Self Protocol Integration
+
+This dapp integrates [Self Protocol](https://docs.self.xyz/) for privacy-preserving identity verification and verifiable credentials.
+
+### Features
+
+- **Age Verification**: Prove you're 18+ without revealing your exact age or identity
+- **Quiz Achievements**: Earn verifiable credentials for quiz completion and high scores
+- **Verified Leaderboard**: Compete with verified users while maintaining privacy
+- **Zero-Knowledge Proofs**: All verification happens through ZK proofs - no personal data is stored
+
+### How It Works
+
+1. **Scan QR Code**: Users scan a QR code with the Self app
+2. **Provide Proof**: Self app generates a zero-knowledge proof
+3. **Backend Verification**: Server verifies the proof without accessing personal data
+4. **Participate**: Verified users can access quizzes and earn credentials
+
+For detailed setup instructions, see [SELF_PROTOCOL.md](./SELF_PROTOCOL.md).
+
+### Benefits
+
+- Enhanced trust and safety on the platform
+- Privacy-preserving compliance with age requirements
+- Verifiable achievements without centralized identity systems
+- Sybil resistance for leaderboards and rewards
+
+For more information about Self Protocol, visit [docs.self.xyz](https://docs.self.xyz/).
