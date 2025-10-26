@@ -72,7 +72,25 @@ source .env && rm -rf cache out && forge build && forge script --chain 42220 scr
 
 ## 📋 Contract Verification
 
-After deployment, verify your contracts on Basescan:
+### Automated Verification (Recommended)
+
+Use the automated verification script to verify all contracts at once:
+
+```bash
+# Verify all contracts on all networks
+./verify-contracts.sh all
+
+# Or verify specific network
+./verify-contracts.sh base
+./verify-contracts.sh celo
+./verify-contracts.sh edu
+```
+
+For detailed instructions, see [VERIFICATION.md](./VERIFICATION.md)
+
+### Manual Verification
+
+Alternatively, verify your contracts manually on Basescan:
 
 ```bash
 # Verify QuizGame contract on Base
