@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import BottomNavigation from '../components/BottomNavigation'
 import { chickenGameABI } from '../libs/chickenGameABI'
-import GlobalHeader from '../components/GlobalHeader'
-import { formatEther } from 'viem'
 
 // Temporary contract addresses - replace with actual deployed addresses
 const CHICKEN_GAME_ADDRESS = '0x7147fC4382a87D772E8667A2f9322ce471A1912E' as `0x${string}`;
@@ -157,8 +156,7 @@ function ChickenPage() {
 
   if (!isConnected) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <GlobalHeader />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
         <div style={{
           maxWidth: "600px",
           margin: "0 auto",
@@ -170,13 +168,13 @@ function ChickenPage() {
             Please connect your wallet to play Chicken Game.
           </p>
         </div>
+        <BottomNavigation />
       </motion.div>
     )
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <GlobalHeader />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
       <div style={{
         maxWidth: "800px",
         margin: "0 auto",
@@ -431,6 +429,7 @@ function ChickenPage() {
           </ul>
         </div>
       </div>
+      <BottomNavigation />
     </motion.div>
   )
 }
