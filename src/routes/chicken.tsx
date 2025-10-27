@@ -2,16 +2,20 @@ import { createFileRoute } from "@tanstack/react-router"
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract, useChainId, useSwitchChain } from 'wagmi'
 import BottomNavigation from '../components/BottomNavigation'
 import { chickenGameABI } from '../libs/chickenGameABI'
+import { SUPPORTED_CHAIN } from '../libs/supportedChains'
+import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral'
 
 // Temporary contract addresses - replace with actual deployed addresses
 const CHICKEN_GAME_ADDRESS = '0x7147fC4382a87D772E8667A2f9322ce471A1912E' as `0x${string}`;
 const EGG_TOKEN_ADDRESS = '0x252Cf4eF66DB38ac1C53f05ccF5dc0f90331151A' as `0x${string}`;
 
 function ChickenPage() {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain } = useAccount()
+  const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const [selectedAction, setSelectedAction] = useState<'feed' | 'pet' | 'play' | null>(null)
 
   // Contract reads
@@ -71,10 +75,10 @@ function ChickenPage() {
   });
 
   // Contract writes
-  const { writeContract: feedChicken, isPending: isFeedPending, data: feedHash } = useWriteContract()
-  const { writeContract: petChicken, isPending: isPetPending, data: petHash } = useWriteContract()
-  const { writeContract: playWithChicken, isPending: isPlayPending, data: playHash } = useWriteContract()
-  const { writeContract: layEgg, isPending: isLayEggPending, data: layEggHash } = useWriteContract()
+  const { writeContract: feedChicken, isPending: isFeedPending, data: feedHash, error: feedError } = useWriteContract()
+  const { writeContract: petChicken, isPending: isPetPending, data: petHash, error: petError } = useWriteContract()
+  const { writeContract: playWithChicken, isPending: isPlayPending, data: playHash, error: playError } = useWriteContract()
+  const { writeContract: layEgg, isPending: isLayEggPending, data: layEggHash, error: layEggError } = useWriteContract()
 
   // Wait for transactions
   const { isSuccess: isFeedSuccess } = useWaitForTransactionReceipt({ hash: feedHash })
@@ -88,70 +92,170 @@ function ChickenPage() {
   const instantActionsRemaining = chickenData ? Number(chickenData[5]) : 10
   const initialized = chickenData ? chickenData[6] : false
 
+  // Check if any transaction is pending
+  const isAnyTransactionPending = isFeedPending || isPetPending || isPlayPending || isLayEggPending
+
   // Effects for success messages
   useEffect(() => {
-    if (isFeedSuccess) {
+    if (isFeedSuccess && feedHash && chain) {
       toast.success('🍗 Fed your chicken! +10 happiness')
       refetchChicken()
+      // Submit to Divvi for referral tracking
+      submitDivviReferral(feedHash, chain.id)
     }
-  }, [isFeedSuccess, refetchChicken])
+  }, [isFeedSuccess, feedHash, chain, refetchChicken])
 
   useEffect(() => {
-    if (isPetSuccess) {
+    if (isPetSuccess && petHash && chain) {
       toast.success('❤️ Petted your chicken! +10 happiness')
       refetchChicken()
+      // Submit to Divvi for referral tracking
+      submitDivviReferral(petHash, chain.id)
     }
-  }, [isPetSuccess, refetchChicken])
+  }, [isPetSuccess, petHash, chain, refetchChicken])
 
   useEffect(() => {
-    if (isPlaySuccess) {
+    if (isPlaySuccess && playHash && chain) {
       toast.success('🎾 Played with your chicken! +10 happiness')
       refetchChicken()
+      // Submit to Divvi for referral tracking
+      submitDivviReferral(playHash, chain.id)
     }
-  }, [isPlaySuccess, refetchChicken])
+  }, [isPlaySuccess, playHash, chain, refetchChicken])
 
   useEffect(() => {
-    if (isLayEggSuccess) {
+    if (isLayEggSuccess && layEggHash && chain) {
       toast.success('🥚 Your chicken laid an egg! +1 EGG token')
       refetchChicken()
+      // Submit to Divvi for referral tracking
+      submitDivviReferral(layEggHash, chain.id)
     }
-  }, [isLayEggSuccess, refetchChicken])
+  }, [isLayEggSuccess, layEggHash, chain, refetchChicken])
+
+  // Error handling effects
+  useEffect(() => {
+    if (feedError) {
+      console.error('Feed error:', feedError)
+      toast.error(`Feed failed: ${feedError.message || 'Unknown error'}`)
+    }
+  }, [feedError])
+
+  useEffect(() => {
+    if (petError) {
+      console.error('Pet error:', petError)
+      toast.error(`Pet failed: ${petError.message || 'Unknown error'}`)
+    }
+  }, [petError])
+
+  useEffect(() => {
+    if (playError) {
+      console.error('Play error:', playError)
+      toast.error(`Play failed: ${playError.message || 'Unknown error'}`)
+    }
+  }, [playError])
+
+  useEffect(() => {
+    if (layEggError) {
+      console.error('Lay egg error:', layEggError)
+      toast.error(`Lay egg failed: ${layEggError.message || 'Unknown error'}`)
+    }
+  }, [layEggError])
 
   // Action handlers
   const handleFeed = () => {
-    if (!address) return
-    feedChicken({
-      address: CHICKEN_GAME_ADDRESS,
-      abi: chickenGameABI,
-      functionName: 'feedChicken',
-    })
+    if (!address) {
+      toast.error('Please connect your wallet')
+      return
+    }
+    // Check if on correct network
+    if (chainId !== SUPPORTED_CHAIN.id) {
+      toast.error(`Please switch to ${SUPPORTED_CHAIN.name} network`)
+      return
+    }
+    try {
+      feedChicken({
+        address: CHICKEN_GAME_ADDRESS,
+        abi: chickenGameABI,
+        functionName: 'feedChicken',
+        chainId: SUPPORTED_CHAIN.id,
+        dataSuffix: getDivviDataSuffix(address),
+      })
+    } catch (error) {
+      console.error('Feed chicken error:', error)
+      toast.error('Failed to initiate feed transaction')
+    }
   }
 
   const handlePet = () => {
-    if (!address) return
-    petChicken({
-      address: CHICKEN_GAME_ADDRESS,
-      abi: chickenGameABI,
-      functionName: 'petChicken',
-    })
+    if (!address) {
+      toast.error('Please connect your wallet')
+      return
+    }
+    // Check if on correct network
+    if (chainId !== SUPPORTED_CHAIN.id) {
+      toast.error(`Please switch to ${SUPPORTED_CHAIN.name} network`)
+      return
+    }
+    try {
+      petChicken({
+        address: CHICKEN_GAME_ADDRESS,
+        abi: chickenGameABI,
+        functionName: 'petChicken',
+        chainId: SUPPORTED_CHAIN.id,
+        dataSuffix: getDivviDataSuffix(address),
+      })
+    } catch (error) {
+      console.error('Pet chicken error:', error)
+      toast.error('Failed to initiate pet transaction')
+    }
   }
 
   const handlePlay = () => {
-    if (!address) return
-    playWithChicken({
-      address: CHICKEN_GAME_ADDRESS,
-      abi: chickenGameABI,
-      functionName: 'playWithChicken',
-    })
+    if (!address) {
+      toast.error('Please connect your wallet')
+      return
+    }
+    // Check if on correct network
+    if (chainId !== SUPPORTED_CHAIN.id) {
+      toast.error(`Please switch to ${SUPPORTED_CHAIN.name} network`)
+      return
+    }
+    try {
+      playWithChicken({
+        address: CHICKEN_GAME_ADDRESS,
+        abi: chickenGameABI,
+        functionName: 'playWithChicken',
+        chainId: SUPPORTED_CHAIN.id,
+        dataSuffix: getDivviDataSuffix(address),
+      })
+    } catch (error) {
+      console.error('Play with chicken error:', error)
+      toast.error('Failed to initiate play transaction')
+    }
   }
 
   const handleLayEgg = () => {
-    if (!address) return
-    layEgg({
-      address: CHICKEN_GAME_ADDRESS,
-      abi: chickenGameABI,
-      functionName: 'layEgg',
-    })
+    if (!address) {
+      toast.error('Please connect your wallet')
+      return
+    }
+    // Check if on correct network
+    if (chainId !== SUPPORTED_CHAIN.id) {
+      toast.error(`Please switch to ${SUPPORTED_CHAIN.name} network`)
+      return
+    }
+    try {
+      layEgg({
+        address: CHICKEN_GAME_ADDRESS,
+        abi: chickenGameABI,
+        functionName: 'layEgg',
+        chainId: SUPPORTED_CHAIN.id,
+        dataSuffix: getDivviDataSuffix(address),
+      })
+    } catch (error) {
+      console.error('Lay egg error:', error)
+      toast.error('Failed to initiate lay egg transaction')
+    }
   }
 
   if (!isConnected) {
@@ -173,6 +277,69 @@ function ChickenPage() {
     )
   }
 
+  // Check if user is on the wrong network
+  const isWrongNetwork = chainId !== SUPPORTED_CHAIN.id
+  const isCorrectNetwork = chainId === SUPPORTED_CHAIN.id
+
+  if (isWrongNetwork) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
+        <div style={{
+          maxWidth: "600px",
+          margin: "0 auto",
+          padding: "2rem",
+          textAlign: "center"
+        }}>
+          <div style={{
+            background: "#fef2f2",
+            border: "2px solid #ef4444",
+            borderRadius: "12px",
+            padding: "2rem",
+            marginBottom: "1rem"
+          }}>
+            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⚠️</div>
+            <h2 style={{ color: "#991b1b", marginBottom: "1rem" }}>Wrong Network</h2>
+            <p style={{ color: "#7f1d1d", marginBottom: "1rem" }}>
+              Please switch to <strong>{SUPPORTED_CHAIN.name}</strong> to play Chicken Game.
+            </p>
+            <p style={{ color: "#7f1d1d", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
+              Current Chain ID: {chainId}<br />
+              Expected Chain ID: {SUPPORTED_CHAIN.id}
+            </p>
+            <button 
+              onClick={() => switchChain({ chainId: SUPPORTED_CHAIN.id })}
+              style={{
+                backgroundColor: "#58CC02",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "0.75rem 1.5rem",
+                fontSize: "1rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#4CAF00"
+                e.currentTarget.style.transform = "scale(1.02)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#58CC02"
+                e.currentTarget.style.transform = "scale(1)"
+              }}
+            >
+              Switch to {SUPPORTED_CHAIN.name}
+            </button>
+          </div>
+          <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>
+            Or manually switch to {SUPPORTED_CHAIN.name} in your wallet.
+          </p>
+        </div>
+        <BottomNavigation />
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
       <div style={{
@@ -180,6 +347,47 @@ function ChickenPage() {
         margin: "0 auto",
         padding: "2rem"
       }}>
+        {/* Network Warning Banner */}
+        {!isCorrectNetwork && (
+          <div style={{
+            background: "#fef2f2",
+            border: "2px solid #ef4444",
+            borderRadius: "12px",
+            padding: "1rem",
+            marginBottom: "1.5rem",
+            textAlign: "center"
+          }}>
+            <p style={{ color: "#991b1b", fontWeight: 600, marginBottom: "0.5rem" }}>
+              ⚠️ Wrong Network Detected
+            </p>
+            <p style={{ color: "#7f1d1d", fontSize: "0.875rem", marginBottom: "0.75rem" }}>
+              Please switch to {SUPPORTED_CHAIN.name} to interact with your chicken.
+            </p>
+            <button 
+              onClick={() => switchChain({ chainId: SUPPORTED_CHAIN.id })}
+              style={{
+                backgroundColor: "#ef4444",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "0.5rem 1rem",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#dc2626"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ef4444"
+              }}
+            >
+              Switch to {SUPPORTED_CHAIN.name}
+            </button>
+          </div>
+        )}
+
         <h1 style={{
           color: "#111827",
           marginBottom: "2rem",
@@ -286,21 +494,22 @@ function ChickenPage() {
           {canLayEgg && (
             <button
               onClick={handleLayEgg}
-              disabled={isLayEggPending}
+              disabled={isLayEggPending || !isCorrectNetwork}
               style={{
                 width: "100%",
-                backgroundColor: isLayEggPending ? "#9ca3af" : "#22c55e",
+                backgroundColor: isLayEggPending || !isCorrectNetwork ? "#9ca3af" : "#22c55e",
                 color: "white",
                 border: "none",
                 borderRadius: "12px",
                 padding: "1rem",
                 fontSize: "1.125rem",
                 fontWeight: 700,
-                cursor: isLayEggPending ? "not-allowed" : "pointer",
-                marginBottom: "1rem"
+                cursor: isLayEggPending || !isCorrectNetwork ? "not-allowed" : "pointer",
+                marginBottom: "1rem",
+                opacity: !isCorrectNetwork ? 0.6 : 1
               }}
             >
-              {isLayEggPending ? "Laying Egg..." : "🥚 Lay Egg (Get 1 EGG Token!)"}
+              {!isCorrectNetwork ? "⚠️ Wrong Network" : isLayEggPending ? "Laying Egg..." : "🥚 Lay Egg (Get 1 EGG Token!)"}
             </button>
           )}
         </div>
@@ -314,18 +523,18 @@ function ChickenPage() {
           {/* Feed Action */}
           <button
             onClick={handleFeed}
-            disabled={!feedAvailable || isFeedPending}
+            disabled={!feedAvailable || isFeedPending || !isCorrectNetwork}
             style={{
-              background: feedAvailable && !isFeedPending ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${feedAvailable && !isFeedPending ? "#f59e0b" : "#e5e7eb"}`,
+              background: feedAvailable && !isFeedPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
+              border: `2px solid ${feedAvailable && !isFeedPending && isCorrectNetwork ? "#f59e0b" : "#e5e7eb"}`,
               borderRadius: "12px",
               padding: "1.5rem",
-              cursor: feedAvailable && !isFeedPending ? "pointer" : "not-allowed",
-              opacity: feedAvailable && !isFeedPending ? 1 : 0.6,
+              cursor: feedAvailable && !isFeedPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              opacity: feedAvailable && !isFeedPending && isCorrectNetwork ? 1 : 0.6,
               transition: "all 0.2s ease"
             }}
             onMouseEnter={(e) => {
-              if (feedAvailable && !isFeedPending) {
+              if (feedAvailable && !isFeedPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = "scale(1.02)"
                 e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
               }
@@ -340,25 +549,25 @@ function ChickenPage() {
               Feed
             </div>
             <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {isFeedPending ? "Feeding..." : feedAvailable ? "+10 happiness" : "On cooldown"}
+              {!isCorrectNetwork ? "Wrong network" : isFeedPending ? "Feeding..." : feedAvailable ? "+10 happiness" : "On cooldown"}
             </div>
           </button>
 
           {/* Pet Action */}
           <button
             onClick={handlePet}
-            disabled={!petAvailable || isPetPending}
+            disabled={!petAvailable || isPetPending || !isCorrectNetwork}
             style={{
-              background: petAvailable && !isPetPending ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${petAvailable && !isPetPending ? "#ec4899" : "#e5e7eb"}`,
+              background: petAvailable && !isPetPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
+              border: `2px solid ${petAvailable && !isPetPending && isCorrectNetwork ? "#ec4899" : "#e5e7eb"}`,
               borderRadius: "12px",
               padding: "1.5rem",
-              cursor: petAvailable && !isPetPending ? "pointer" : "not-allowed",
-              opacity: petAvailable && !isPetPending ? 1 : 0.6,
+              cursor: petAvailable && !isPetPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              opacity: petAvailable && !isPetPending && isCorrectNetwork ? 1 : 0.6,
               transition: "all 0.2s ease"
             }}
             onMouseEnter={(e) => {
-              if (petAvailable && !isPetPending) {
+              if (petAvailable && !isPetPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = "scale(1.02)"
                 e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
               }
@@ -373,25 +582,25 @@ function ChickenPage() {
               Pet
             </div>
             <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {isPetPending ? "Petting..." : petAvailable ? "+10 happiness" : "On cooldown"}
+              {!isCorrectNetwork ? "Wrong network" : isPetPending ? "Petting..." : petAvailable ? "+10 happiness" : "On cooldown"}
             </div>
           </button>
 
           {/* Play Action */}
           <button
             onClick={handlePlay}
-            disabled={!playAvailable || isPlayPending}
+            disabled={!playAvailable || isPlayPending || !isCorrectNetwork}
             style={{
-              background: playAvailable && !isPlayPending ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${playAvailable && !isPlayPending ? "#8b5cf6" : "#e5e7eb"}`,
+              background: playAvailable && !isPlayPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
+              border: `2px solid ${playAvailable && !isPlayPending && isCorrectNetwork ? "#8b5cf6" : "#e5e7eb"}`,
               borderRadius: "12px",
               padding: "1.5rem",
-              cursor: playAvailable && !isPlayPending ? "pointer" : "not-allowed",
-              opacity: playAvailable && !isPlayPending ? 1 : 0.6,
+              cursor: playAvailable && !isPlayPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              opacity: playAvailable && !isPlayPending && isCorrectNetwork ? 1 : 0.6,
               transition: "all 0.2s ease"
             }}
             onMouseEnter={(e) => {
-              if (playAvailable && !isPlayPending) {
+              if (playAvailable && !isPlayPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = "scale(1.02)"
                 e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
               }
@@ -406,7 +615,7 @@ function ChickenPage() {
               Play
             </div>
             <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {isPlayPending ? "Playing..." : playAvailable ? "+10 happiness" : "On cooldown"}
+              {!isCorrectNetwork ? "Wrong network" : isPlayPending ? "Playing..." : playAvailable ? "+10 happiness" : "On cooldown"}
             </div>
           </button>
         </div>

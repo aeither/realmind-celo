@@ -6,6 +6,7 @@ import { z } from 'zod'
 import 'dotenv/config'
 import { QuizService } from './services/quiz.js'
 import { LeaderboardService } from './services/leaderboard.js'
+import { SelfService } from './services/self.js'
 
 const app = new Hono()
 
@@ -24,9 +25,9 @@ app.get('/', (c) => {
     message: 'Backend2 - AI Quiz Generator with Backlog Scheduler & Redis Cache',
     version: '3.0.0',
     endpoints: [
-      '/health', 
-      '/generate-quiz', 
-      '/daily-quiz', 
+      '/health',
+      '/generate-quiz',
+      '/daily-quiz',
       '/daily-quiz/cached',
       '/backlog',
       '/backlog/add',
@@ -34,6 +35,8 @@ app.get('/', (c) => {
       '/test/insert-quiz',
       '/health/gateway',
       '/health/redis',
+      '/health/self',
+      '/api/self/verify',
       '/leaderboard',
       '/leaderboard/chains'
     ]
@@ -171,6 +174,7 @@ Example format:
 // Initialize services
 const quizService = new QuizService()
 const leaderboardService = new LeaderboardService()
+const selfService = new SelfService()
 
 // Daily Quiz Endpoint - Get the latest daily quiz
 app.get('/daily-quiz', async (c) => {
@@ -543,6 +547,141 @@ app.get('/leaderboard/scan-url', async (c) => {
     return c.json({
       success: false,
       error: 'Failed to get scan URL',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Self Protocol Endpoints
+
+// Self Protocol health check
+app.get('/health/self', async (c) => {
+  try {
+    const isHealthy = await selfService.healthCheck()
+
+    return c.json({
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      service: 'self_protocol',
+      timestamp: new Date().toISOString()
+    }, isHealthy ? 200 : 503)
+  } catch (error) {
+    return c.json({
+      status: 'error',
+      service: 'self_protocol',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Self Protocol verification endpoint
+app.post('/api/self/verify', async (c) => {
+  try {
+    const body = await c.req.json()
+
+    // Log the entire request body to understand the format
+    console.log('[Self Verify] Received request body:', JSON.stringify(body, null, 2))
+
+    // Self Protocol mobile app sends data in this format:
+    // { vcAndDiscloseProof, pubSignals, attestationId, scope, userIdentifier, userDefinedData }
+    const {
+      vcAndDiscloseProof,
+      pubSignals,
+      attestationId,
+      scope,
+      userIdentifier,
+      userDefinedData
+    } = body
+
+    console.log('[Self Verify] Parsed data:', {
+      hasProof: !!vcAndDiscloseProof,
+      hasPubSignals: !!pubSignals,
+      attestationId,
+      scope,
+      userIdentifier
+    })
+
+    // Validate required fields
+    if (!vcAndDiscloseProof) {
+      console.log('[Self Verify] Missing vcAndDiscloseProof')
+      return c.json({
+        success: false,
+        verified: false,
+        error: 'Proof is required'
+      }, 400)
+    }
+
+    if (!pubSignals || !Array.isArray(pubSignals)) {
+      console.log('[Self Verify] Missing or invalid pubSignals')
+      return c.json({
+        success: false,
+        verified: false,
+        error: 'Public signals are required'
+      }, 400)
+    }
+
+    if (!attestationId) {
+      console.log('[Self Verify] Missing attestationId')
+      return c.json({
+        success: false,
+        verified: false,
+        error: 'Attestation ID is required'
+      }, 400)
+    }
+
+    if (!userIdentifier) {
+      console.log('[Self Verify] Missing userIdentifier')
+      return c.json({
+        success: false,
+        verified: false,
+        error: 'User identifier is required'
+      }, 400)
+    }
+
+    if (!scope) {
+      console.log('[Self Verify] Missing scope')
+      return c.json({
+        success: false,
+        verified: false,
+        error: 'Scope is required'
+      }, 400)
+    }
+
+    // Call verification service
+    const result = await selfService.verifyUserProof({
+      proof: vcAndDiscloseProof,
+      pubSignals,
+      attestationId,
+      userId: userIdentifier,
+      scope,
+      userDefinedData: userDefinedData || ''
+    })
+
+    if (result.success && result.verified) {
+      console.log('[Self Verify] Verification successful for userIdentifier:', userIdentifier)
+      return c.json({
+        success: true,
+        verified: true,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      console.log('[Self Verify] Verification failed:', result.error)
+      return c.json({
+        success: false,
+        verified: false,
+        error: result.error || 'Verification failed',
+        timestamp: new Date().toISOString()
+      }, 400)
+    }
+
+  } catch (error) {
+    console.error('[Self Verify] Endpoint error:', error)
+    return c.json({
+      success: false,
+      verified: false,
+      error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, 500)

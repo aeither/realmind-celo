@@ -1,7 +1,7 @@
-import { useState, useEffect, Suspense } from 'react';
-import { getUniversalLink } from "@selfxyz/core";
+import { useState, useEffect } from 'react';
 import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode";
 import type { SelfApp } from "@selfxyz/qrcode";
+import { getUniversalLink } from "@selfxyz/core";
 import { Button } from './ui/Button';
 import { toast } from 'sonner';
 
@@ -111,20 +111,15 @@ export function SelfVerification({
           ) : (
             // Desktop: Show QR Code
             <div className="flex flex-col items-center">
-              <Suspense fallback={
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'hsl(var(--primary))' }}></div>
-                </div>
-              }>
-                <SelfQRcodeWrapper
-                  selfApp={selfApp}
-                  onSuccess={handleSuccessfulVerification}
-                  onError={(error) => {
-                    console.error("Verification error:", error);
-                    toast.error('Verification failed. Please try again.');
-                  }}
-                />
-              </Suspense>
+              <SelfQRcodeWrapper
+                selfApp={selfApp}
+                onSuccess={handleSuccessfulVerification}
+                onError={(error) => {
+                  console.error("Verification error:", error);
+                  const errorMsg = error?.reason || 'Verification failed. Please try again.';
+                  toast.error(errorMsg);
+                }}
+              />
               <p className="text-xs mt-4 text-center" style={{ color: 'hsl(var(--celo-brown))' }}>
                 Scan with the Self mobile app
               </p>

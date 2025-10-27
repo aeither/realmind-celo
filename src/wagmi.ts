@@ -3,9 +3,17 @@ import { farcasterMiniApp as miniAppConnector } from '@farcaster/miniapp-wagmi-c
 import { metaMask, walletConnect, injected } from 'wagmi/connectors';
 import { SUPPORTED_CHAINS } from './libs/supportedChains';
 
+// RPC URLs by chain ID - using reliable public endpoints
+const RPC_URLS: Record<number, string> = {
+  42220: 'https://forno.celo.org', // Celo Mainnet official RPC
+  8453: 'https://mainnet.base.org', // Base Mainnet official RPC
+  41923: 'https://rpc.edu-chain.raas.gelato.cloud', // EDU Chain
+};
+
 // Create transport configuration for all supported chains
 const transports = SUPPORTED_CHAINS.reduce((acc, chain) => {
-  acc[chain.id] = http();
+  const rpcUrl = RPC_URLS[chain.id];
+  acc[chain.id] = http(rpcUrl);
   return acc;
 }, {} as Record<number, any>);
 
