@@ -605,9 +605,10 @@ app.post('/api/self/verify', async (c) => {
     const proof = body.vcAndDiscloseProof || body.proof
     const publicSignals = body.pubSignals || body.publicSignals
     const attestationId = body.attestationId
-    const scope = body.scope
+    // Use configured scope as fallback if not provided
+    const scope = body.scope || process.env.SELF_SCOPE || 'realmind-celo'
     const userIdentifier = body.userIdentifier || body.userId
-    const userDefinedData = body.userDefinedData || body.userContextData || ''
+    const userDefinedData = body.userDefinedData || body.userContextData || body.userContext || ''
 
     console.log('[Self Verify] Extracted fields:', {
       hasProof: !!proof,
@@ -615,10 +616,20 @@ app.post('/api/self/verify', async (c) => {
       hasPublicSignals: !!publicSignals,
       publicSignalsLength: Array.isArray(publicSignals) ? publicSignals.length : 'not array',
       attestationId,
-      scope,
-      userIdentifier,
+      scope: scope,
+      scopeSource: body.scope ? 'request' : 'fallback',
+      userIdentifier: userIdentifier || 'will be extracted from proof',
+      userIdentifierSource: body.userIdentifier ? 'userIdentifier' : (body.userId ? 'userId' : 'from proof'),
       userDefinedData
     })
+
+    // Log warnings for missing fields that we're using fallbacks for
+    if (!body.scope) {
+      console.warn('[Self Verify] ⚠️ scope not in request, using configured fallback:', scope)
+    }
+    if (!body.userIdentifier && !body.userId) {
+      console.warn('[Self Verify] ⚠️ userIdentifier not in request, will extract from proof verification')
+    }
 
     // Validate required fields with detailed error messages
     if (!proof) {
@@ -656,22 +667,25 @@ app.post('/api/self/verify', async (c) => {
       }, 400)
     }
 
-    // User identifier might be missing - we can extract it from the verification result
+    // User identifier and scope might be missing - we have fallbacks
     if (!userIdentifier) {
       console.warn('[Self Verify] ⚠️ userIdentifier not provided, will extract from verification result')
     }
 
     if (!scope) {
-      console.error('[Self Verify] ❌ Missing scope')
+      // This should never happen since we have a fallback, but just in case
+      console.error('[Self Verify] ❌ No scope available (not in request or env)')
       return c.json({
         success: false,
         verified: false,
-        error: 'Scope is required',
-        hint: 'Expected field: scope'
+        error: 'Scope is required and not configured',
+        hint: 'Set SELF_SCOPE environment variable'
       }, 400)
     }
 
-    console.log('[Self Verify] ✅ All required fields present, calling verification service...')
+    console.log('[Self Verify] ✅ All required fields present (with fallbacks where needed), calling verification service...')
+    console.log('[Self Verify] Using scope:', scope)
+    console.log('[Self Verify] Using userIdentifier:', userIdentifier || 'WILL_BE_EXTRACTED_FROM_PROOF')
 
     // Call verification service
     // Use a placeholder userIdentifier if not provided - the verifier will extract it
