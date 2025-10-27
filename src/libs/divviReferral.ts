@@ -4,7 +4,6 @@
  */
 
 import { getReferralTag, submitReferral } from '@divvi/referral-sdk'
-import { toast } from 'sonner'
 
 // Your Divvi consumer address
 export const DIVVI_CONSUMER_ADDRESS = '0x8e7eBE53b6ad215E395f3f17d43C3b75062DfDa1'

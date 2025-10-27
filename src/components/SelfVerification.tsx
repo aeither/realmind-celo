@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { SelfQRcodeWrapper, SelfAppBuilder } from "@selfxyz/qrcode";
 import type { SelfApp } from "@selfxyz/qrcode";
 import { getUniversalLink } from "@selfxyz/core";
-import { Button } from './ui/Button';
 import { toast } from 'sonner';
 
 interface SelfVerificationProps {
@@ -39,7 +38,7 @@ export function SelfVerification({
           endpoint: endpoint,
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
           userId: userId,
-          endpointType: "staging_https", // Change to "mainnet_https" for production
+          endpointType: "https", // Change to "mainnet_https" for production
           userIdType: "hex", // 'hex' for EVM address
           userDefinedData: "Realmind Profile Verification",
           disclosures: {
@@ -91,19 +90,20 @@ export function SelfVerification({
           {isMobile ? (
             // Mobile: Show button to open Self App
             <div className="text-center">
-              <Button
+              <button
                 onClick={openSelfApp}
                 disabled={!universalLink}
-                className="btn-industrial"
+                className="btn-industrial w-full"
                 style={{
                   background: 'hsl(var(--primary))',
                   color: 'hsl(var(--celo-white))',
                   padding: '0.75rem 1.5rem',
-                  width: '100%'
+                  opacity: !universalLink ? 0.5 : 1,
+                  cursor: !universalLink ? 'not-allowed' : 'pointer'
                 }}
               >
                 Open Self App
-              </Button>
+              </button>
               <p className="text-xs mt-2" style={{ color: 'hsl(var(--celo-brown))' }}>
                 Opens the Self app for identity verification
               </p>

@@ -580,86 +580,102 @@ app.post('/api/self/verify', async (c) => {
   try {
     const body = await c.req.json()
 
-    // Log the entire request body to understand the format
-    console.log('[Self Verify] Received request body:', JSON.stringify(body, null, 2))
+    // Log the entire request for debugging
+    console.log('[Self Verify] ==================== NEW REQUEST ====================')
+    console.log('[Self Verify] Request headers:', Object.fromEntries(c.req.raw.headers.entries()))
+    console.log('[Self Verify] Request body keys:', Object.keys(body))
+    console.log('[Self Verify] Full request body:', JSON.stringify(body, null, 2))
 
-    // Self Protocol mobile app sends data in this format:
-    // { vcAndDiscloseProof, pubSignals, attestationId, scope, userIdentifier, userDefinedData }
-    const {
-      vcAndDiscloseProof,
-      pubSignals,
+    // Self Protocol mobile app can send data in different formats
+    // Try to extract fields with multiple possible names
+    const proof = body.vcAndDiscloseProof || body.proof
+    const publicSignals = body.pubSignals || body.publicSignals
+    const attestationId = body.attestationId
+    const scope = body.scope
+    const userIdentifier = body.userIdentifier || body.userId
+    const userDefinedData = body.userDefinedData || body.userContextData || ''
+
+    console.log('[Self Verify] Extracted fields:', {
+      hasProof: !!proof,
+      proofType: proof ? typeof proof : 'undefined',
+      hasPublicSignals: !!publicSignals,
+      publicSignalsLength: Array.isArray(publicSignals) ? publicSignals.length : 'not array',
       attestationId,
       scope,
       userIdentifier,
       userDefinedData
-    } = body
-
-    console.log('[Self Verify] Parsed data:', {
-      hasProof: !!vcAndDiscloseProof,
-      hasPubSignals: !!pubSignals,
-      attestationId,
-      scope,
-      userIdentifier
     })
 
-    // Validate required fields
-    if (!vcAndDiscloseProof) {
-      console.log('[Self Verify] Missing vcAndDiscloseProof')
+    // Validate required fields with detailed error messages
+    if (!proof) {
+      console.error('[Self Verify] ❌ Missing proof field')
+      console.error('[Self Verify] Available fields:', Object.keys(body))
       return c.json({
         success: false,
         verified: false,
-        error: 'Proof is required'
+        error: 'Proof is required',
+        details: `Available fields: ${Object.keys(body).join(', ')}`,
+        hint: 'Expected field: vcAndDiscloseProof or proof'
       }, 400)
     }
 
-    if (!pubSignals || !Array.isArray(pubSignals)) {
-      console.log('[Self Verify] Missing or invalid pubSignals')
+    if (!publicSignals || !Array.isArray(publicSignals)) {
+      console.error('[Self Verify] ❌ Missing or invalid publicSignals')
+      console.error('[Self Verify] publicSignals type:', typeof publicSignals)
+      console.error('[Self Verify] publicSignals value:', publicSignals)
       return c.json({
         success: false,
         verified: false,
-        error: 'Public signals are required'
+        error: 'Public signals are required and must be an array',
+        details: `Received type: ${typeof publicSignals}, is array: ${Array.isArray(publicSignals)}`,
+        hint: 'Expected field: pubSignals or publicSignals (array)'
       }, 400)
     }
 
     if (!attestationId) {
-      console.log('[Self Verify] Missing attestationId')
+      console.error('[Self Verify] ❌ Missing attestationId')
       return c.json({
         success: false,
         verified: false,
-        error: 'Attestation ID is required'
+        error: 'Attestation ID is required',
+        hint: 'Expected field: attestationId (1, 2, or 3)'
       }, 400)
     }
 
     if (!userIdentifier) {
-      console.log('[Self Verify] Missing userIdentifier')
+      console.error('[Self Verify] ❌ Missing userIdentifier')
       return c.json({
         success: false,
         verified: false,
-        error: 'User identifier is required'
+        error: 'User identifier is required',
+        hint: 'Expected field: userIdentifier or userId'
       }, 400)
     }
 
     if (!scope) {
-      console.log('[Self Verify] Missing scope')
+      console.error('[Self Verify] ❌ Missing scope')
       return c.json({
         success: false,
         verified: false,
-        error: 'Scope is required'
+        error: 'Scope is required',
+        hint: 'Expected field: scope'
       }, 400)
     }
 
+    console.log('[Self Verify] ✅ All required fields present, calling verification service...')
+
     // Call verification service
     const result = await selfService.verifyUserProof({
-      proof: vcAndDiscloseProof,
-      pubSignals,
+      proof: proof,
+      pubSignals: publicSignals,
       attestationId,
       userId: userIdentifier,
       scope,
-      userDefinedData: userDefinedData || ''
+      userDefinedData
     })
 
     if (result.success && result.verified) {
-      console.log('[Self Verify] Verification successful for userIdentifier:', userIdentifier)
+      console.log('[Self Verify] ✅ Verification successful for userIdentifier:', userIdentifier)
       return c.json({
         success: true,
         verified: true,
@@ -667,7 +683,7 @@ app.post('/api/self/verify', async (c) => {
         timestamp: new Date().toISOString()
       })
     } else {
-      console.log('[Self Verify] Verification failed:', result.error)
+      console.error('[Self Verify] ❌ Verification failed:', result.error)
       return c.json({
         success: false,
         verified: false,
@@ -677,7 +693,8 @@ app.post('/api/self/verify', async (c) => {
     }
 
   } catch (error) {
-    console.error('[Self Verify] Endpoint error:', error)
+    console.error('[Self Verify] ❌ Endpoint exception:', error)
+    console.error('[Self Verify] Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return c.json({
       success: false,
       verified: false,
