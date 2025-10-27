@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as QuizGameRouteImport } from './routes/quiz-game'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ContractRouteImport } from './routes/contract'
+import { Route as ChickenRouteImport } from './routes/chicken'
 import { Route as BackendDemoRouteImport } from './routes/backend-demo'
 import { Route as AiQuizRouteImport } from './routes/ai-quiz'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +23,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const QuizGameRoute = QuizGameRouteImport.update({
   id: '/quiz-game',
   path: '/quiz-game',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
@@ -43,6 +50,11 @@ const ContractRoute = ContractRouteImport.update({
   path: '/contract',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChickenRoute = ChickenRouteImport.update({
+  id: '/chicken',
+  path: '/chicken',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BackendDemoRoute = BackendDemoRouteImport.update({
   id: '/backend-demo',
   path: '/backend-demo',
@@ -63,20 +75,24 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
+  '/chicken': typeof ChickenRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
+  '/chicken': typeof ChickenRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
 }
 export interface FileRoutesById {
@@ -84,10 +100,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
+  '/chicken': typeof ChickenRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
 }
 export interface FileRouteTypes {
@@ -96,30 +114,36 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
+    | '/chicken'
     | '/contract'
     | '/demo'
     | '/landing'
     | '/leaderboard'
+    | '/profile'
     | '/quiz-game'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
+    | '/chicken'
     | '/contract'
     | '/demo'
     | '/landing'
     | '/leaderboard'
+    | '/profile'
     | '/quiz-game'
   id:
     | '__root__'
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
+    | '/chicken'
     | '/contract'
     | '/demo'
     | '/landing'
     | '/leaderboard'
+    | '/profile'
     | '/quiz-game'
   fileRoutesById: FileRoutesById
 }
@@ -127,10 +151,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiQuizRoute: typeof AiQuizRoute
   BackendDemoRoute: typeof BackendDemoRoute
+  ChickenRoute: typeof ChickenRoute
   ContractRoute: typeof ContractRoute
   DemoRoute: typeof DemoRoute
   LandingRoute: typeof LandingRoute
   LeaderboardRoute: typeof LeaderboardRoute
+  ProfileRoute: typeof ProfileRoute
   QuizGameRoute: typeof QuizGameRoute
 }
 
@@ -141,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/quiz-game'
       fullPath: '/quiz-game'
       preLoaderRoute: typeof QuizGameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboard': {
@@ -171,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chicken': {
+      id: '/chicken'
+      path: '/chicken'
+      fullPath: '/chicken'
+      preLoaderRoute: typeof ChickenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/backend-demo': {
       id: '/backend-demo'
       path: '/backend-demo'
@@ -199,10 +239,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiQuizRoute: AiQuizRoute,
   BackendDemoRoute: BackendDemoRoute,
+  ChickenRoute: ChickenRoute,
   ContractRoute: ContractRoute,
   DemoRoute: DemoRoute,
   LandingRoute: LandingRoute,
   LeaderboardRoute: LeaderboardRoute,
+  ProfileRoute: ProfileRoute,
   QuizGameRoute: QuizGameRoute,
 }
 export const routeTree = rootRouteImport

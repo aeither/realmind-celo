@@ -36,12 +36,13 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0",
         className
       )}
-      style={{ 
+      style={{
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(4px)'
+        backdropFilter: 'blur(4px)',
+        zIndex: 9999
       }}
       {...props}
     />
@@ -62,14 +63,20 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-6 duration-200 sm:max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 grid w-full max-w-[calc(100%-2rem)] gap-6 duration-200 sm:max-w-lg",
           className
         )}
         style={{
           background: 'hsl(var(--celo-white))',
           border: 'var(--outline-thick)',
           padding: '2rem',
-          position: 'relative'
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10000,
+          maxHeight: '90vh',
+          overflowY: 'auto'
         }}
         {...props}
       >

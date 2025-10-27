@@ -12,6 +12,12 @@ export default function BottomNavigation() {
       path: '/'
     },
     {
+      id: 'profile',
+      label: 'Profile',
+      icon: '👤',
+      path: '/profile'
+    },
+    {
       id: 'leaderboard',
       label: 'Leaderboard',
       icon: '🏆',

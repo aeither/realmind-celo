@@ -1,8 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
-import { useAccount, useReadContract, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useReadContract, useDisconnect, useConnect, useConnectors } from 'wagmi';
 import { formatEther } from 'viem';
 import { getContractAddresses, token1ABI } from '../libs/constants';
+import { useEffect, useState } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
+import WalletModal from './WalletModal';
 
 interface GlobalHeaderProps {
   showBackButton?: boolean;
@@ -10,15 +13,50 @@ interface GlobalHeaderProps {
   backText?: string;
 }
 
-function GlobalHeader({ 
-  showBackButton = false, 
-  backTo = "/", 
-  backText = "← Back" 
+function GlobalHeader({
+  showBackButton = false,
+  backTo = "/",
+  backText = "← Back"
 }: GlobalHeaderProps) {
   const { address, chain, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-  
+  const { connect } = useConnect();
+  const connectors = useConnectors();
+  const [isMiniApp, setIsMiniApp] = useState<boolean | null>(null);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+  // Detect if running in Farcaster Mini App
+  useEffect(() => {
+    const detectEnvironment = async () => {
+      try {
+        const isInMiniApp = await sdk.isInMiniApp();
+        setIsMiniApp(isInMiniApp);
+
+        if (isInMiniApp) {
+          const context = await sdk.context;
+          console.log('Farcaster context:', context.user.username);
+        }
+      } catch (error) {
+        console.error('Error detecting Mini App environment:', error);
+        setIsMiniApp(false);
+      }
+    };
+
+    detectEnvironment();
+  }, []);
+
+  const handleConnectWallet = () => {
+    const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp');
+
+    if (isMiniApp && farcasterConnector) {
+      // In Farcaster Mini App, connect directly with Farcaster
+      connect({ connector: farcasterConnector });
+    } else {
+      // In browser, open modal with all wallet options
+      setIsWalletModalOpen(true);
+    }
+  };
+
   // Get contract addresses based on current chain
   const contractAddresses = chain ? getContractAddresses(chain.id) : null;
 
@@ -220,8 +258,8 @@ function GlobalHeader({
             </div>
           ) : (
             <button
-              onClick={() => connectors[0] && connect({ connector: connectors[0] })}
-              disabled={isPending || connectors.length === 0}
+              onClick={handleConnectWallet}
+              disabled={connectors.length === 0}
               className="btn-primary-industrial"
               style={{
                 background: "hsl(var(--celo-black))",
@@ -233,28 +271,34 @@ function GlobalHeader({
                 fontWeight: "var(--font-weight-body-black)",
                 textTransform: "uppercase",
                 letterSpacing: "0.02em",
-                cursor: isPending || connectors.length === 0 ? "not-allowed" : "pointer",
-                opacity: isPending || connectors.length === 0 ? 0.5 : 1,
+                cursor: connectors.length === 0 ? "not-allowed" : "pointer",
+                opacity: connectors.length === 0 ? 0.5 : 1,
                 transition: "var(--transition-fast)"
               }}
               onMouseEnter={(e) => {
-                if (!isPending && connectors.length > 0) {
+                if (connectors.length > 0) {
                   e.currentTarget.style.background = "hsl(var(--celo-yellow))";
                   e.currentTarget.style.color = "hsl(var(--celo-black))";
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isPending && connectors.length > 0) {
+                if (connectors.length > 0) {
                   e.currentTarget.style.background = "hsl(var(--celo-black))";
                   e.currentTarget.style.color = "hsl(var(--celo-yellow))";
                 }
               }}
             >
-              {isPending ? "CONNECTING..." : "CONNECT"}
+              CONNECT
             </button>
           )}
         </motion.div>
       </motion.div>
+
+      {/* Wallet Modal for browser users */}
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </header>
   );
 }
