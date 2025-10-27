@@ -582,9 +582,23 @@ app.post('/api/self/verify', async (c) => {
 
     // Log the entire request for debugging
     console.log('[Self Verify] ==================== NEW REQUEST ====================')
+    console.log('[Self Verify] Timestamp:', new Date().toISOString())
     console.log('[Self Verify] Request headers:', Object.fromEntries(c.req.raw.headers.entries()))
+    console.log('[Self Verify] Request body type:', typeof body)
     console.log('[Self Verify] Request body keys:', Object.keys(body))
-    console.log('[Self Verify] Full request body:', JSON.stringify(body, null, 2))
+    console.log('[Self Verify] Request body values (keys only):',
+      Object.keys(body).map(key => `${key}: ${typeof body[key]}`).join(', ')
+    )
+    console.log('[Self Verify] Full request body (stringified):')
+    console.log(JSON.stringify(body, null, 2))
+
+    // Try to find ANY field that might contain the user identifier
+    console.log('[Self Verify] Searching for user identifier in all fields...')
+    for (const [key, value] of Object.entries(body)) {
+      if (key.toLowerCase().includes('user') || key.toLowerCase().includes('identifier') || key.toLowerCase().includes('address')) {
+        console.log(`[Self Verify] Found potential user field: ${key} = ${value}`)
+      }
+    }
 
     // Self Protocol mobile app can send data in different formats
     // Try to extract fields with multiple possible names
@@ -642,14 +656,9 @@ app.post('/api/self/verify', async (c) => {
       }, 400)
     }
 
+    // User identifier might be missing - we can extract it from the verification result
     if (!userIdentifier) {
-      console.error('[Self Verify] ❌ Missing userIdentifier')
-      return c.json({
-        success: false,
-        verified: false,
-        error: 'User identifier is required',
-        hint: 'Expected field: userIdentifier or userId'
-      }, 400)
+      console.warn('[Self Verify] ⚠️ userIdentifier not provided, will extract from verification result')
     }
 
     if (!scope) {
@@ -665,11 +674,12 @@ app.post('/api/self/verify', async (c) => {
     console.log('[Self Verify] ✅ All required fields present, calling verification service...')
 
     // Call verification service
+    // Use a placeholder userIdentifier if not provided - the verifier will extract it
     const result = await selfService.verifyUserProof({
       proof: proof,
       pubSignals: publicSignals,
       attestationId,
-      userId: userIdentifier,
+      userId: userIdentifier || 'WILL_BE_EXTRACTED_FROM_PROOF',
       scope,
       userDefinedData
     })

@@ -165,6 +165,11 @@ export class SelfService {
         };
       }
 
+      // Extract the actual user identifier from the verification result
+      const actualUserId = verificationResult.userData.userIdentifier || request.userId;
+
+      console.log('[SelfService] Extracted user identifier from proof:', actualUserId);
+
       // Extract disclosed data
       const disclosures = {
         minimumAge: parseInt(verificationResult.discloseOutput.minimumAge),
@@ -175,13 +180,13 @@ export class SelfService {
         issuingState: verificationResult.discloseOutput.issuingState,
       };
 
-      console.log('[SelfService] Verification successful for userId:', request.userId);
+      console.log('[SelfService] Verification successful for userId:', actualUserId);
 
       return {
         success: true,
         verified: true,
         data: {
-          userId: request.userId,
+          userId: actualUserId,
           verified: true,
           timestamp: new Date().toISOString(),
           disclosures,

@@ -38,7 +38,7 @@ export function SelfVerification({
           endpoint: endpoint,
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png",
           userId: userId,
-          endpointType: "https", // Change to "mainnet_https" for production
+          endpointType: "https",
           userIdType: "hex", // 'hex' for EVM address
           userDefinedData: "Realmind Profile Verification",
           disclosures: {
