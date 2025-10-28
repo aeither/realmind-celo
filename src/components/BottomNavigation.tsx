@@ -12,16 +12,16 @@ export default function BottomNavigation() {
       path: '/'
     },
     {
+      id: 'leaderboard',
+      label: 'Ranks',
+      icon: '🏆',
+      path: '/leaderboard'
+    },
+    {
       id: 'profile',
       label: 'Profile',
       icon: '👤',
       path: '/profile'
-    },
-    {
-      id: 'leaderboard',
-      label: 'Leaderboard',
-      icon: '🏆',
-      path: '/leaderboard'
     },
     // {
     //   id: 'ai-quiz',
@@ -40,14 +40,15 @@ export default function BottomNavigation() {
       left: 0,
       right: 0,
       background: 'hsl(var(--celo-white))',
-      border: 'var(--outline-thick)',
+      border: 'var(--outline-medium)',
       borderBottom: 'none',
-      padding: '0.5rem 0',
-      paddingBottom: `calc(1.5rem + env(safe-area-inset-bottom, 0px))`,
+      padding: '0.3rem',
+      paddingBottom: `calc(0.8rem + env(safe-area-inset-bottom, 0px))`,
       zIndex: 1000,
       display: 'flex',
       justifyContent: 'space-around',
-      alignItems: 'stretch'
+      alignItems: 'center',
+      gap: '0.5rem'
     }}>
       {navItems.map((item) => (
         <button
@@ -59,19 +60,20 @@ export default function BottomNavigation() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.3rem',
-            padding: '1rem 0.8rem',
+            gap: '0.2rem',
+            padding: '0.5rem',
             background: isActive(item.path) ? 'hsl(var(--celo-yellow))' : 'hsl(var(--celo-white))',
             border: isActive(item.path) ? 'var(--outline-medium)' : 'var(--outline-thin)',
             cursor: 'pointer',
             color: isActive(item.path) ? 'hsl(var(--celo-black))' : 'hsl(var(--celo-black))',
             transition: 'var(--transition-fast)',
-            minWidth: '80px',
-            height: '70px',
+            width: '60px',
+            height: '60px',
+            flex: '0 0 auto',
             fontFamily: 'var(--font-body)',
             fontWeight: 'var(--font-weight-body-black)',
             textTransform: 'uppercase',
-            letterSpacing: '0.02em'
+            letterSpacing: '0.01em'
           }}
           onMouseEnter={(e) => {
             if (!isActive(item.path)) {
@@ -88,24 +90,28 @@ export default function BottomNavigation() {
             }
           }}
         >
-          <span style={{ 
-            fontSize: '1.2rem',
+          <span style={{
+            fontSize: '1.5rem',
             fontWeight: 'var(--font-weight-body-black)',
             transition: 'var(--transition-fast)',
             display: 'block',
-            marginBottom: '0.2rem'
+            lineHeight: '1'
           }}>
             {item.icon}
           </span>
-          <span style={{ 
-            fontSize: '0.6rem', 
+          <span style={{
+            fontSize: '0.5rem',
             fontFamily: 'var(--font-body)',
             fontWeight: 'var(--font-weight-body-black)',
             transition: 'var(--transition-fast)',
             textAlign: 'center',
-            lineHeight: '1',
-            letterSpacing: '0.02em',
-            textTransform: 'uppercase'
+            lineHeight: '1.1',
+            letterSpacing: '0.01em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '100%'
           }}>
             {item.label}
           </span>

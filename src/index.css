@@ -57,7 +57,7 @@
     /* Celo-brand raw, high-contrast palette - BOLD & UNAPOLOGETIC */
     --celo-yellow: 56 100% 66%; /* #FCFF52 - BRIGHT ENERGY */
     --celo-green: 86 40% 28%;  /* #4E632A - DEEP FOREST */
-    --celo-purple: 289 86% 9%;  /* #1A0329 - DARK POWER */
+    --celo-purple: 289 100% 6%;  /* #1F002A - DARK POWER */
     --celo-tan: 32 59% 97%;     /* #FBF6F1 - LIGHT FOUNDATION */
     --celo-tan-2: 49 25% 86%;   /* #E6E3D5 - NEUTRAL STRUCTURE */
     --celo-brown: 33 14% 34%;   /* #635949 - INDUSTRIAL TONE */
@@ -458,6 +458,55 @@
 
   .border-quiz-incorrect {
     border-color: hsl(var(--quiz-incorrect));
+  }
+
+  /* CARD UTILITIES - Enhanced for Celo 2.0 */
+  .card-elevated {
+    border: 3px solid hsl(var(--celo-black));
+    box-shadow: 6px 6px 0px hsl(var(--celo-black));
+    transition: var(--transition-fast);
+  }
+
+  .card-elevated:hover {
+    transform: translateY(-4px);
+    box-shadow: 8px 8px 0px hsl(var(--celo-black));
+  }
+
+  .card-simple {
+    border: 3px solid hsl(var(--celo-black));
+    box-shadow: 4px 4px 0px hsl(var(--celo-black));
+  }
+
+  /* ACCENT DECORATIONS */
+  .accent-corner {
+    position: relative;
+  }
+
+  .accent-corner::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 30px;
+    height: 8px;
+    background: hsl(var(--celo-yellow));
+    border: 2px solid hsl(var(--celo-black));
+  }
+
+  /* RESPONSIVE UTILITIES */
+  .container-responsive {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(1rem, 4vw, 2rem);
+  }
+
+  /* SPACING UTILITIES */
+  .section-spacing {
+    margin-bottom: clamp(2rem, 5vw, 3rem);
+  }
+
+  .element-spacing {
+    margin-bottom: clamp(1rem, 3vw, 1.5rem);
   }
 }
 

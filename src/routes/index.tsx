@@ -313,75 +313,51 @@ function HomePage() {
   }
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      paddingBottom: "120px",
-      background: "hsl(var(--background))"
-    }}>
+      <div style={{
+        minHeight: "100vh",
+        paddingBottom: "70px",
+        background: "hsl(var(--celo-yellow))"
+      }}>
       <GlobalHeader />
 
       {/* Main Content */}
-      <div style={{ 
-        paddingTop: "20px",
-        padding: "clamp(1rem, 4vw, 2rem)", 
-        maxWidth: "100%",
-        margin: "0"
+      <div style={{
+        paddingTop: "80px",
+        padding: "clamp(0.8rem, 3vw, 1.5rem)",
+        maxWidth: "1400px",
+        margin: "0 auto"
       }}>
-        {/* Hero Section - Mobile Optimized */}
-        <div className="poster-section" style={{
-          textAlign: "left",
-          marginBottom: "2rem",
-          padding: "clamp(1rem, 4vw, 3rem)",
-          background: "var(--gradient-hero)",
+        {/* Hero Section - Compact */}
+        <div className="color-block-purple" style={{
+          textAlign: "center",
+          marginBottom: "1.5rem",
+          padding: "1.5rem",
+          border: "3px solid hsl(var(--celo-black))",
           position: "relative",
-          minHeight: "auto",
-          display: "block"
+          boxShadow: "4px 4px 0px hsl(var(--celo-black))"
         }}>
-          <div style={{
-            position: "absolute",
-            top: "15px",
-            left: "15px",
-            width: "clamp(40px, 8vw, 80px)",
-            height: "clamp(4px, 1vw, 8px)",
-            background: "hsl(var(--celo-yellow))"
-          }}></div>
-          
-          <h1 className="text-headline-thin" style={{ 
-            fontSize: "clamp(2rem, 12vw, 6rem)", 
-            marginBottom: "clamp(1rem, 4vw, 1.5rem)",
+          <h1 className="text-headline-thin" style={{
+            fontSize: "clamp(2rem, 8vw, 3.5rem)",
+            marginBottom: "0.8rem",
+            color: "hsl(var(--celo-yellow))",
+            textTransform: "uppercase",
+            lineHeight: "1",
+            margin: "0"
+          }}>
+            Learn CELO, Earn Rewards
+          </h1>
+
+          <p className="text-body-heavy" style={{
+            fontSize: "clamp(0.75rem, 2.5vw, 0.9rem)",
             color: "hsl(var(--celo-white))",
             textTransform: "uppercase",
-            lineHeight: "0.85",
-            textShadow: "2px 2px 0px hsl(var(--celo-black))",
-            wordBreak: "break-word",
-            hyphens: "auto"
+            letterSpacing: "0.02em",
+            fontWeight: "var(--font-weight-body-heavy)",
+            lineHeight: "1.3",
+            margin: "0"
           }}>
-            Learn<br className="sm:hidden" /> <span style={{ fontStyle: "italic", color: "hsl(var(--celo-yellow))" }}>& Earn</span>
-          </h1>
-          
-          <div className="color-block-yellow" style={{
-            display: "block",
-            padding: "clamp(1rem, 4vw, 2.5rem)",
-            maxWidth: "100%",
-            width: "100%",
-            border: "clamp(2px, 0.5vw, 3px) solid hsl(var(--celo-black))",
-            boxShadow: "clamp(2px, 1vw, 4px) clamp(2px, 1vw, 4px) 0px hsl(var(--celo-black))",
-            marginTop: "clamp(1rem, 3vw, 2rem)"
-          }}>
-            <p className="text-body-heavy" style={{
-              fontSize: "clamp(0.9rem, 3.5vw, 1.4rem)",
-              color: "hsl(var(--celo-black))",
-              textTransform: "uppercase",
-              letterSpacing: "clamp(0.01em, 0.5vw, 0.03em)",
-              fontWeight: "var(--font-weight-body-black)",
-              lineHeight: "clamp(1.2, 2vw, 1.3)",
-              margin: "0",
-              wordBreak: "break-word",
-              hyphens: "auto"
-            }}>
-              Master blockchain knowledge through gamified quizzes
-            </p>
-          </div>
+            Master CELO blockchain, Compete for the prize pool
+          </p>
         </div>
 
         {/* Daily Quiz Section - More Compact */}
@@ -460,26 +436,29 @@ function HomePage() {
           </button>
         </div> */}
 
-        {/* Available Quizzes - Bold Grid */}
+        {/* Available Quizzes - Compact Grid */}
         <div style={{ marginBottom: "2rem" }}>
-          <div className="color-block-purple" style={{ 
-            padding: "1.5rem 2rem", 
-            marginBottom: "2rem", 
-            display: "inline-block" 
+          <div className="color-block-purple" style={{
+            padding: "0.8rem 1.5rem",
+            marginBottom: "1.2rem",
+            display: "inline-block",
+            border: "3px solid hsl(var(--celo-black))",
+            boxShadow: "3px 3px 0px hsl(var(--celo-black))"
           }}>
-            <h2 className="text-headline-thin" style={{ 
-              fontSize: "clamp(1.5rem, 4vw, 2.5rem)", 
+            <h2 className="text-headline-thin" style={{
+              fontSize: "clamp(1.3rem, 4vw, 2rem)",
               color: "hsl(var(--celo-white))",
-              textTransform: "uppercase"
+              textTransform: "uppercase",
+              margin: "0"
             }}>
               Available <span style={{ fontStyle: "italic" }}>Quizzes</span>
             </h2>
           </div>
-          
+
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "1.5rem"
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "1rem"
           }}>
             {AVAILABLE_QUIZZES.map((quiz, index) => (
               <div
@@ -489,74 +468,82 @@ function HomePage() {
                   background: "hsl(var(--celo-white))",
                   cursor: "pointer",
                   transition: "var(--transition-fast)",
-                  position: "relative"
+                  position: "relative",
+                  border: "3px solid hsl(var(--celo-black))",
+                  padding: "1rem",
+                  boxShadow: "3px 3px 0px hsl(var(--celo-black))"
                 }}
                 onClick={() => navigate({ to: '/quiz-game', search: { quiz: quiz.id } })}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "hsl(var(--celo-yellow))";
                   e.currentTarget.style.color = "hsl(var(--celo-black))";
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 8px 0px hsl(var(--celo-black))";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "5px 5px 0px hsl(var(--celo-black))";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "hsl(var(--celo-white))";
                   e.currentTarget.style.color = "hsl(var(--celo-black))";
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.boxShadow = "3px 3px 0px hsl(var(--celo-black))";
                 }}
               >
                 <div style={{
                   position: "absolute",
-                  top: "15px",
-                  right: "15px",
+                  top: "10px",
+                  right: "10px",
                   width: "20px",
                   height: "4px",
-                  background: `hsl(var(--celo-${index % 2 === 0 ? 'yellow' : 'green'}))`
+                  background: `hsl(var(--celo-${index % 2 === 0 ? 'yellow' : 'green'}))`,
+                  border: "2px solid hsl(var(--celo-black))"
                 }}></div>
-                
-                <div style={{ 
-                  fontSize: "2rem", 
-                  marginBottom: "1rem",
+
+                <div style={{
+                  fontSize: "2rem",
+                  marginBottom: "0.6rem",
                   fontWeight: "var(--font-weight-body-black)"
                 }}>{quiz.icon}</div>
-                
-                <h3 className="text-body-black" style={{ 
-                  fontSize: "clamp(1.1rem, 2vw, 1.4rem)", 
-                  marginBottom: "1rem",
+
+                <h3 className="text-body-black" style={{
+                  fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
+                  marginBottom: "0.5rem",
                   textTransform: "uppercase",
-                  letterSpacing: "0.02em"
+                  letterSpacing: "0.02em",
+                  lineHeight: "1.2"
                 }}>{quiz.title}</h3>
-                
-                <p className="text-body-heavy" style={{ 
-                  marginBottom: "1.5rem", 
-                  fontSize: "0.85rem", 
-                  lineHeight: "1.4",
-                  opacity: 0.8
+
+                <p className="text-body-heavy" style={{
+                  marginBottom: "0.8rem",
+                  fontSize: "0.75rem",
+                  lineHeight: "1.3",
+                  color: "hsl(var(--celo-brown))"
                 }}>
                   {quiz.description}
                 </p>
-                
-                <div style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
+
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  borderTop: "var(--outline-thin)",
-                  paddingTop: "1rem"
+                  borderTop: "2px solid hsl(var(--celo-black))",
+                  paddingTop: "0.6rem",
+                  marginTop: "auto"
                 }}>
-                  <span className="text-body-heavy" style={{ 
-                    fontSize: "0.7rem",
+                  <span className="text-body-heavy" style={{
+                    fontSize: "0.65rem",
                     textTransform: "uppercase",
-                    letterSpacing: "0.02em"
+                    letterSpacing: "0.02em",
+                    color: "hsl(var(--celo-brown))"
                   }}>
-                    {quiz.questions} QUESTIONS • {quiz.estimatedTime.toUpperCase()}
+                    {quiz.questions} Q • {quiz.estimatedTime.toUpperCase()}
                   </span>
                   <div className="color-block" style={{
                     background: "hsl(var(--celo-tan-2))",
-                    padding: "0.3rem 0.6rem",
+                    padding: "0.3rem 0.5rem",
                     fontSize: "0.6rem",
                     fontWeight: "var(--font-weight-body-black)",
                     textTransform: "uppercase",
-                    letterSpacing: "0.02em"
+                    letterSpacing: "0.02em",
+                    border: "2px solid hsl(var(--celo-black))"
                   }}>
                     {quiz.category}
                   </div>

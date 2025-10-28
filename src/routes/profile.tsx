@@ -120,16 +120,40 @@ function ProfilePage() {
 
   if (!isConnected) {
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
-        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--celo-yellow))' }}>
+        <GlobalHeader />
+        <div className="flex flex-col items-center justify-center" style={{ minHeight: 'calc(100vh - 160px)', padding: '2rem 1rem' }}>
           <div className="text-center max-w-md">
-            <h1 className="text-4xl font-bold mb-4" style={{ color: 'hsl(var(--primary))' }}>Profile</h1>
-            <p className="mb-8" style={{ color: 'hsl(var(--celo-brown))' }}>
+            <div className="color-block-purple" style={{
+              padding: '2rem 3rem',
+              marginBottom: '2rem',
+              border: '3px solid hsl(var(--celo-black))',
+              display: 'inline-block'
+            }}>
+              <h1 className="text-headline-thin" style={{ 
+                fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+                color: 'hsl(var(--celo-white))',
+                textTransform: 'uppercase',
+                margin: '0'
+              }}>Profile</h1>
+            </div>
+            <p className="text-body-heavy" style={{ 
+              marginBottom: '2rem',
+              color: 'hsl(var(--celo-brown))',
+              textTransform: 'uppercase',
+              fontSize: '1rem',
+              letterSpacing: '0.02em'
+            }}>
               Connect your wallet to view your profile and verify your identity
             </p>
             <Button
               onClick={handleConnect}
               className="btn-primary-industrial"
+              style={{
+                fontSize: '1rem',
+                padding: '1rem 2.5rem',
+                textTransform: 'uppercase'
+              }}
             >
               Connect Wallet
             </Button>
@@ -142,8 +166,9 @@ function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
-        <div className="flex items-center justify-center min-h-[80vh]">
+      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--celo-yellow))' }}>
+        <GlobalHeader />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 160px)' }}>
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'hsl(var(--primary))' }}></div>
             <p style={{ color: 'hsl(var(--celo-brown))' }}>Loading profile...</p>
@@ -155,59 +180,146 @@ function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--celo-yellow))' }}>
+      <GlobalHeader />
+      <div className="container mx-auto px-4 max-w-4xl" style={{ paddingTop: '100px', paddingBottom: '1rem' }}>
         <div className="color-block" style={{
           background: 'hsl(var(--celo-white))',
-          border: 'var(--outline-thick)',
-          padding: '2rem',
-          marginBottom: '1.5rem'
+          border: '3px solid hsl(var(--celo-black))',
+          padding: 'clamp(1.5rem, 4vw, 2rem)',
+          marginBottom: '1rem',
+          boxShadow: '6px 6px 0px hsl(var(--celo-black))'
         }}>
           {/* Profile Header */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
             {profile?.pfpUrl ? (
-              <img
-                src={profile.pfpUrl}
-                alt="Profile"
-                className="w-32 h-32 rounded-full border-4 border-purple-500 shadow-lg"
-              />
+              <div style={{ position: 'relative' }}>
+                <img
+                  src={profile.pfpUrl}
+                  alt="Profile"
+                  style={{
+                    width: '150px',
+                    height: '150px',
+                    border: '4px solid hsl(var(--celo-black))',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  width: '30px',
+                  height: '8px',
+                  background: 'hsl(var(--celo-yellow))',
+                  border: '2px solid hsl(var(--celo-black))'
+                }}></div>
+              </div>
             ) : (
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold">
+              <div style={{
+                width: '150px',
+                height: '150px',
+                background: 'linear-gradient(135deg, hsl(var(--celo-purple)), hsl(var(--celo-pink)))',
+                border: '4px solid hsl(var(--celo-black))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'hsl(var(--celo-white))',
+                fontSize: '3rem',
+                fontWeight: 'var(--font-weight-body-black)',
+                position: 'relative'
+              }}>
                 {address?.slice(2, 4).toUpperCase()}
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  right: '-10px',
+                  width: '30px',
+                  height: '8px',
+                  background: 'hsl(var(--celo-yellow))',
+                  border: '2px solid hsl(var(--celo-black))'
+                }}></div>
               </div>
             )}
 
             <div className="flex-1 text-center md:text-left">
               {profile ? (
                 <>
-                  <h1 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--celo-black))' }}>
+                  <h1 className="text-headline-thin" style={{ 
+                    fontSize: 'clamp(2rem, 5vw, 3rem)',
+                    color: 'hsl(var(--celo-black))',
+                    marginBottom: '0.5rem',
+                    textTransform: 'uppercase'
+                  }}>
                     {profile.displayName}
                   </h1>
-                  <p className="text-lg mb-3" style={{ color: 'hsl(var(--primary))' }}>@{profile.username}</p>
+                  <p className="text-body-heavy" style={{ 
+                    fontSize: '1.2rem',
+                    marginBottom: '1rem',
+                    color: 'hsl(var(--celo-purple))',
+                    textTransform: 'uppercase'
+                  }}>@{profile.username}</p>
                   {profile.bio && (
-                    <p className="mb-4" style={{ color: 'hsl(var(--celo-brown))' }}>{profile.bio}</p>
+                    <p className="text-body-heavy" style={{ 
+                      marginBottom: '1.5rem',
+                      color: 'hsl(var(--celo-brown))',
+                      fontSize: '1rem',
+                      lineHeight: '1.5'
+                    }}>{profile.bio}</p>
                   )}
                   <div className="flex gap-6 justify-center md:justify-start text-sm">
                     {profile.followerCount !== undefined && (
-                      <div>
-                        <span className="font-semibold" style={{ color: 'hsl(var(--celo-black))' }}>{profile.followerCount}</span>
-                        <span style={{ color: 'hsl(var(--celo-brown))' }}> followers</span>
+                      <div className="color-block" style={{
+                        background: 'hsl(var(--celo-tan-2))',
+                        padding: '0.5rem 1rem',
+                        border: '2px solid hsl(var(--celo-black))'
+                      }}>
+                        <span className="text-body-black" style={{ 
+                          color: 'hsl(var(--celo-black))',
+                          fontSize: '1.2rem'
+                        }}>{profile.followerCount}</span>
+                        <span className="text-body-heavy" style={{ 
+                          color: 'hsl(var(--celo-brown))',
+                          textTransform: 'uppercase',
+                          fontSize: '0.7rem',
+                          marginLeft: '0.3rem'
+                        }}> followers</span>
                       </div>
                     )}
                     {profile.followingCount !== undefined && (
-                      <div>
-                        <span className="font-semibold" style={{ color: 'hsl(var(--celo-black))' }}>{profile.followingCount}</span>
-                        <span style={{ color: 'hsl(var(--celo-brown))' }}> following</span>
+                      <div className="color-block" style={{
+                        background: 'hsl(var(--celo-tan-2))',
+                        padding: '0.5rem 1rem',
+                        border: '2px solid hsl(var(--celo-black))'
+                      }}>
+                        <span className="text-body-black" style={{ 
+                          color: 'hsl(var(--celo-black))',
+                          fontSize: '1.2rem'
+                        }}>{profile.followingCount}</span>
+                        <span className="text-body-heavy" style={{ 
+                          color: 'hsl(var(--celo-brown))',
+                          textTransform: 'uppercase',
+                          fontSize: '0.7rem',
+                          marginLeft: '0.3rem'
+                        }}> following</span>
                       </div>
                     )}
                   </div>
                 </>
               ) : (
                 <div>
-                  <h1 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--celo-black))' }}>
+                  <h1 className="text-headline-thin" style={{ 
+                    fontSize: 'clamp(2rem, 5vw, 3rem)',
+                    color: 'hsl(var(--celo-black))',
+                    marginBottom: '1rem',
+                    textTransform: 'uppercase'
+                  }}>
                     {address?.slice(0, 6)}...{address?.slice(-4)}
                   </h1>
-                  <p className="mb-4" style={{ color: 'hsl(var(--celo-brown))' }}>
+                  <p className="text-body-heavy" style={{ 
+                    marginBottom: '1rem',
+                    color: 'hsl(var(--celo-brown))',
+                    textTransform: 'uppercase'
+                  }}>
                     {error || 'No Farcaster profile found for this address'}
                   </p>
                 </div>
@@ -216,13 +328,19 @@ function ProfilePage() {
           </div>
 
           {/* Wallet Info */}
-          <div style={{ borderTop: 'var(--outline-thin)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-            <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--celo-black))' }}>Wallet Address</h2>
+          <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginBottom: '2rem', marginTop: '2rem' }}>
+            <h2 className="text-body-black" style={{ 
+              color: 'hsl(var(--celo-black))',
+              fontSize: '1.5rem',
+              marginBottom: '1rem',
+              textTransform: 'uppercase'
+            }}>Wallet Address</h2>
             <div className="color-block p-4 flex items-center justify-between" style={{
               background: 'hsl(var(--celo-tan-2))',
-              border: 'var(--outline-medium)'
+              border: '3px solid hsl(var(--celo-black))',
+              padding: '1.5rem'
             }}>
-              <code className="text-sm break-all" style={{ color: 'hsl(var(--primary))' }}>{address}</code>
+              <code className="text-sm break-all" style={{ color: 'hsl(var(--celo-purple))' }}>{address}</code>
               <button
                 onClick={() => navigator.clipboard.writeText(address || '')}
                 className="ml-4 transition-colors"
@@ -248,11 +366,20 @@ function ProfilePage() {
           </div>
 
           {/* Self Protocol Verification Section */}
-          <div style={{ borderTop: 'var(--outline-thin)', paddingTop: '1.5rem' }}>
+          <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold mb-2" style={{ color: 'hsl(var(--celo-black))' }}>Identity Verification</h2>
-                <p className="text-sm" style={{ color: 'hsl(var(--celo-brown))' }}>
+                <h2 className="text-body-black" style={{ 
+                  color: 'hsl(var(--celo-black))',
+                  fontSize: '1.5rem',
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase'
+                }}>Identity Verification</h2>
+                <p className="text-body-heavy" style={{ 
+                  color: 'hsl(var(--celo-brown))',
+                  fontSize: '0.9rem',
+                  textTransform: 'uppercase'
+                }}>
                   Verify your identity with Self Protocol
                 </p>
               </div>
@@ -330,14 +457,18 @@ function ProfilePage() {
           </div>
 
           {/* Disconnect Button */}
-          <div style={{ borderTop: 'var(--outline-thin)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
+          <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
             <Button
               onClick={() => disconnect()}
               className="btn-industrial"
               style={{
                 background: 'hsl(var(--celo-black))',
                 color: 'hsl(var(--celo-white))',
-                width: '100%'
+                width: '100%',
+                fontSize: '1rem',
+                padding: '1rem',
+                textTransform: 'uppercase',
+                border: '3px solid hsl(var(--celo-black))'
               }}
             >
               Disconnect Wallet

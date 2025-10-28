@@ -8,7 +8,6 @@ import { chickenGameABI } from '../libs/chickenGameABI'
 import { SUPPORTED_CHAIN } from '../libs/supportedChains'
 import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral'
 
-// Temporary contract addresses - replace with actual deployed addresses
 const CHICKEN_GAME_ADDRESS = '0x7147fC4382a87D772E8667A2f9322ce471A1912E' as `0x${string}`;
 const EGG_TOKEN_ADDRESS = '0x252Cf4eF66DB38ac1C53f05ccF5dc0f90331151A' as `0x${string}`;
 
@@ -276,7 +275,7 @@ function ChickenPage() {
 
   if (!isConnected) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--background))' }}>
         <div style={{
           maxWidth: "600px",
           margin: "0 auto",
@@ -299,7 +298,7 @@ function ChickenPage() {
 
   if (isWrongNetwork) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--background))' }}>
         <div style={{
           maxWidth: "600px",
           margin: "0 auto",
@@ -357,11 +356,12 @@ function ChickenPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--background))' }}>
       <div style={{
-        maxWidth: "800px",
+        maxWidth: "900px",
         margin: "0 auto",
-        padding: "2rem"
+        padding: "clamp(1rem, 4vw, 2rem)",
+        paddingTop: "110px"
       }}>
         {/* Network Warning Banner */}
         {!isCorrectNetwork && (
@@ -404,24 +404,40 @@ function ChickenPage() {
           </div>
         )}
 
-        <h1 style={{
-          color: "#111827",
-          marginBottom: "2rem",
-          textAlign: "center",
-          fontSize: "2rem",
-          fontWeight: 800
-        }}>
-          🐔 Chicken Care Game
-        </h1>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div className="color-block-yellow" style={{
+            padding: '1.5rem 3rem',
+            display: 'inline-block',
+            border: '3px solid hsl(var(--celo-black))',
+            position: 'relative'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '-10px',
+              right: '-10px',
+              width: '35px',
+              height: '8px',
+              background: 'hsl(var(--celo-purple))',
+              border: '2px solid hsl(var(--celo-black))'
+            }}></div>
+            <h1 className="text-headline-thin" style={{
+              color: 'hsl(var(--celo-black))',
+              margin: '0',
+              fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+              textTransform: 'uppercase'
+            }}>
+              🐔 Chicken <span style={{ fontStyle: 'italic' }}>Care</span>
+            </h1>
+          </div>
+        </div>
 
         {/* Chicken Stats Card */}
-        <div style={{
-          background: "#ffffff",
-          borderRadius: "16px",
-          padding: "2rem",
-          marginBottom: "2rem",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)"
+        <div className="color-block" style={{
+          background: 'hsl(var(--celo-white))',
+          padding: 'clamp(2rem, 5vw, 3rem)',
+          marginBottom: '2rem',
+          border: '3px solid hsl(var(--celo-black))',
+          boxShadow: '6px 6px 0px hsl(var(--celo-black))'
         }}>
           {/* Chicken Display */}
           <div style={{
@@ -433,28 +449,35 @@ function ChickenPage() {
           </div>
 
           {/* Happiness Bar */}
-          <div style={{ marginBottom: "1.5rem" }}>
+          <div style={{ marginBottom: "2rem" }}>
             <div style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "0.5rem"
+              marginBottom: "0.75rem"
             }}>
-              <span style={{ fontWeight: 600, color: "#374151" }}>Happiness</span>
-              <span style={{ fontWeight: 600, color: "#374151" }}>{happiness}/100</span>
+              <span className="text-body-black" style={{ 
+                color: 'hsl(var(--celo-black))',
+                textTransform: 'uppercase',
+                fontSize: '1rem'
+              }}>Happiness</span>
+              <span className="text-body-black" style={{ 
+                color: 'hsl(var(--celo-black))',
+                fontSize: '1.2rem'
+              }}>{happiness}/100</span>
             </div>
             <div style={{
               width: "100%",
-              height: "24px",
-              background: "#f3f4f6",
-              borderRadius: "12px",
-              overflow: "hidden"
+              height: "30px",
+              background: 'hsl(var(--celo-tan-2))',
+              border: '3px solid hsl(var(--celo-black))',
+              position: 'relative'
             }}>
               <div style={{
                 width: `${happiness}%`,
                 height: "100%",
-                background: happiness >= 100 ? "#22c55e" : "#3b82f6",
+                background: happiness >= 100 ? 'hsl(var(--celo-green))' : 'hsl(var(--celo-yellow))',
                 transition: "width 0.3s ease",
-                borderRadius: "12px"
+                borderRight: happiness < 100 ? '3px solid hsl(var(--celo-black))' : 'none'
               }} />
             </div>
           </div>
@@ -463,28 +486,64 @@ function ChickenPage() {
           <div style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: "1rem",
-            marginBottom: "1.5rem"
+            gap: "1.5rem",
+            marginBottom: "2rem"
           }}>
-            <div style={{
-              background: "#f9fafb",
-              padding: "1rem",
-              borderRadius: "8px",
-              textAlign: "center"
+            <div className="color-block" style={{
+              background: 'hsl(var(--celo-tan-2))',
+              padding: '1.5rem',
+              border: '3px solid hsl(var(--celo-black))',
+              textAlign: "center",
+              position: 'relative'
             }}>
-              <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>Total Eggs Laid</div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '20px',
+                height: '5px',
+                background: 'hsl(var(--celo-yellow))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-heavy" style={{ 
+                fontSize: '0.75rem',
+                color: 'hsl(var(--celo-brown))',
+                textTransform: 'uppercase',
+                marginBottom: '0.5rem'
+              }}>Total Eggs Laid</div>
+              <div className="text-body-black" style={{ 
+                fontSize: '2rem',
+                color: 'hsl(var(--celo-black))'
+              }}>
                 {totalEggsLaid} 🥚
               </div>
             </div>
-            <div style={{
-              background: "#f9fafb",
-              padding: "1rem",
-              borderRadius: "8px",
-              textAlign: "center"
+            <div className="color-block" style={{
+              background: 'hsl(var(--celo-tan-2))',
+              padding: '1.5rem',
+              border: '3px solid hsl(var(--celo-black))',
+              textAlign: "center",
+              position: 'relative'
             }}>
-              <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>Instant Actions</div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '20px',
+                height: '5px',
+                background: 'hsl(var(--celo-purple))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-heavy" style={{ 
+                fontSize: '0.75rem',
+                color: 'hsl(var(--celo-brown))',
+                textTransform: 'uppercase',
+                marginBottom: '0.5rem'
+              }}>Instant Actions</div>
+              <div className="text-body-black" style={{ 
+                fontSize: '2rem',
+                color: 'hsl(var(--celo-black))'
+              }}>
                 {instantActionsRemaining} ⚡
               </div>
             </div>
@@ -511,21 +570,23 @@ function ChickenPage() {
             <button
               onClick={handleLayEgg}
               disabled={isAnyTransactionPending || !isCorrectNetwork}
+              className="btn-primary-industrial"
               style={{
                 width: "100%",
-                backgroundColor: isAnyTransactionPending || !isCorrectNetwork ? "#9ca3af" : "#22c55e",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                padding: "1rem",
-                fontSize: "1.125rem",
-                fontWeight: 700,
-                cursor: isAnyTransactionPending || !isCorrectNetwork ? "not-allowed" : "pointer",
-                marginBottom: "1rem",
-                opacity: isAnyTransactionPending || !isCorrectNetwork ? 0.6 : 1
+                background: isAnyTransactionPending || !isCorrectNetwork ? 'hsl(var(--celo-brown))' : 'hsl(var(--celo-green))',
+                color: 'hsl(var(--celo-white))',
+                border: '3px solid hsl(var(--celo-black))',
+                padding: '1.2rem',
+                fontSize: '1.1rem',
+                fontWeight: 'var(--font-weight-body-black)',
+                textTransform: 'uppercase',
+                cursor: isAnyTransactionPending || !isCorrectNetwork ? 'not-allowed' : 'pointer',
+                marginBottom: '1rem',
+                opacity: isAnyTransactionPending || !isCorrectNetwork ? 0.6 : 1,
+                transition: 'var(--transition-fast)'
               }}
             >
-              {!isCorrectNetwork ? "⚠️ Wrong Network" : isLayEggPending ? "Confirm in wallet..." : isLayEggConfirming ? "Confirming on blockchain..." : isAnyTransactionPending ? "⏳ Transaction Pending..." : "🥚 Lay Egg (Get 1 EGG Token!)"}
+              {!isCorrectNetwork ? '⚠️ Wrong Network' : isLayEggPending ? 'Confirm in wallet...' : isLayEggConfirming ? 'Confirming...' : isAnyTransactionPending ? '⏳ Pending...' : '🥚 Lay Egg (Get 1 EGG)'}
             </button>
           )}
         </div>
@@ -534,38 +595,53 @@ function ChickenPage() {
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1rem"
+          gap: "1.5rem",
+          marginBottom: '2rem'
         }}>
           {/* Feed Action */}
           <button
             onClick={handleFeed}
             disabled={!feedAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            className="color-block"
             style={{
-              background: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#f59e0b" : "#e5e7eb"}`,
-              borderRadius: "12px",
-              padding: "1.5rem",
-              cursor: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              background: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              border: '3px solid hsl(var(--celo-black))',
+              padding: '2rem',
+              cursor: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
               opacity: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
-              transition: "all 0.2s ease"
+              transition: 'var(--transition-fast)',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
               if (feedAvailable && !isAnyTransactionPending && isCorrectNetwork) {
-                e.currentTarget.style.transform = "scale(1.02)"
-                e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
+                e.currentTarget.style.background = 'hsl(var(--celo-yellow))'
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)"
-              e.currentTarget.style.boxShadow = "none"
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
+              if (feedAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+                e.currentTarget.style.background = 'hsl(var(--celo-white))'
+              }
             }}
           >
-            <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>🍗</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🍗</div>
+            <div className="text-body-black" style={{ 
+              fontSize: '1.3rem',
+              color: 'hsl(var(--celo-black))',
+              marginBottom: '0.5rem',
+              textTransform: 'uppercase'
+            }}>
               Feed
             </div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {!isCorrectNetwork ? "Wrong network" : isFeedPending ? "Confirm in wallet..." : isFeedConfirming ? "Confirming..." : isAnyTransactionPending ? "Wait..." : feedAvailable ? "+10 happiness" : "On cooldown"}
+            <div className="text-body-heavy" style={{ 
+              fontSize: '0.8rem',
+              color: 'hsl(var(--celo-brown))',
+              textTransform: 'uppercase'
+            }}>
+              {!isCorrectNetwork ? 'Wrong network' : isFeedPending ? 'Confirm...' : isFeedConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : feedAvailable ? '+10 happiness' : 'On cooldown'}
             </div>
           </button>
 
@@ -573,32 +649,46 @@ function ChickenPage() {
           <button
             onClick={handlePet}
             disabled={!petAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            className="color-block"
             style={{
-              background: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${petAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#ec4899" : "#e5e7eb"}`,
-              borderRadius: "12px",
-              padding: "1.5rem",
-              cursor: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              background: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              border: '3px solid hsl(var(--celo-black))',
+              padding: '2rem',
+              cursor: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
               opacity: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
-              transition: "all 0.2s ease"
+              transition: 'var(--transition-fast)',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
               if (petAvailable && !isAnyTransactionPending && isCorrectNetwork) {
-                e.currentTarget.style.transform = "scale(1.02)"
-                e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
+                e.currentTarget.style.background = 'hsl(var(--celo-pink))'
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)"
-              e.currentTarget.style.boxShadow = "none"
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
+              if (petAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+                e.currentTarget.style.background = 'hsl(var(--celo-white))'
+              }
             }}
           >
-            <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>❤️</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>❤️</div>
+            <div className="text-body-black" style={{ 
+              fontSize: '1.3rem',
+              color: 'hsl(var(--celo-black))',
+              marginBottom: '0.5rem',
+              textTransform: 'uppercase'
+            }}>
               Pet
             </div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {!isCorrectNetwork ? "Wrong network" : isPetPending ? "Confirm in wallet..." : isPetConfirming ? "Confirming..." : isAnyTransactionPending ? "Wait..." : petAvailable ? "+10 happiness" : "On cooldown"}
+            <div className="text-body-heavy" style={{ 
+              fontSize: '0.8rem',
+              color: 'hsl(var(--celo-brown))',
+              textTransform: 'uppercase'
+            }}>
+              {!isCorrectNetwork ? 'Wrong network' : isPetPending ? 'Confirm...' : isPetConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : petAvailable ? '+10 happiness' : 'On cooldown'}
             </div>
           </button>
 
@@ -606,45 +696,68 @@ function ChickenPage() {
           <button
             onClick={handlePlay}
             disabled={!playAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            className="color-block"
             style={{
-              background: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#ffffff" : "#f3f4f6",
-              border: `2px solid ${playAvailable && !isAnyTransactionPending && isCorrectNetwork ? "#8b5cf6" : "#e5e7eb"}`,
-              borderRadius: "12px",
-              padding: "1.5rem",
-              cursor: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? "pointer" : "not-allowed",
+              background: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              border: '3px solid hsl(var(--celo-black))',
+              padding: '2rem',
+              cursor: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
               opacity: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
-              transition: "all 0.2s ease"
+              transition: 'var(--transition-fast)',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
               if (playAvailable && !isAnyTransactionPending && isCorrectNetwork) {
-                e.currentTarget.style.transform = "scale(1.02)"
-                e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
+                e.currentTarget.style.background = 'hsl(var(--celo-purple))'
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)"
-              e.currentTarget.style.boxShadow = "none"
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
+              if (playAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+                e.currentTarget.style.background = 'hsl(var(--celo-white))'
+              }
             }}
           >
-            <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>🎾</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎾</div>
+            <div className="text-body-black" style={{ 
+              fontSize: '1.3rem',
+              color: 'hsl(var(--celo-black))',
+              marginBottom: '0.5rem',
+              textTransform: 'uppercase'
+            }}>
               Play
             </div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              {!isCorrectNetwork ? "Wrong network" : isPlayPending ? "Confirm in wallet..." : isPlayConfirming ? "Confirming..." : isAnyTransactionPending ? "Wait..." : playAvailable ? "+10 happiness" : "On cooldown"}
+            <div className="text-body-heavy" style={{ 
+              fontSize: '0.8rem',
+              color: 'hsl(var(--celo-brown))',
+              textTransform: 'uppercase'
+            }}>
+              {!isCorrectNetwork ? 'Wrong network' : isPlayPending ? 'Confirm...' : isPlayConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : playAvailable ? '+10 happiness' : 'On cooldown'}
             </div>
           </button>
         </div>
 
         {/* Instructions */}
-        <div style={{
-          background: "#f9fafb",
-          borderRadius: "12px",
-          padding: "1.5rem",
-          marginTop: "2rem"
+        <div className="color-block" style={{
+          background: 'hsl(var(--celo-tan-2))',
+          border: '3px solid hsl(var(--celo-black))',
+          padding: 'clamp(1.5rem, 4vw, 2rem)'
         }}>
-          <h3 style={{ color: "#111827", marginBottom: "1rem", fontWeight: 700 }}>How to Play</h3>
-          <ul style={{ color: "#6b7280", lineHeight: 1.8, paddingLeft: "1.5rem" }}>
+          <h3 className="text-body-black" style={{ 
+            color: 'hsl(var(--celo-black))',
+            marginBottom: '1rem',
+            fontSize: '1.3rem',
+            textTransform: 'uppercase'
+          }}>How to Play</h3>
+          <ul className="text-body-heavy" style={{ 
+            color: 'hsl(var(--celo-brown))',
+            lineHeight: 1.8,
+            paddingLeft: '1.5rem',
+            fontSize: '0.9rem'
+          }}>
             <li>Perform actions (Feed, Pet, Play) to increase your chicken's happiness</li>
             <li>Each action adds +10 happiness points</li>
             <li>New users get 10 free instant actions to get started!</li>

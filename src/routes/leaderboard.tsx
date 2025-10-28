@@ -77,100 +77,118 @@ function LeaderboardPage() {
   const chainName = chain?.name || 'Unknown'
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      paddingBottom: '80px', // Space for bottom nav
-      background: '#f9fafb'
+    <div style={{
+      minHeight: '100vh',
+      paddingBottom: '70px',
+      background: 'hsl(var(--background))'
     }}>
       <GlobalHeader />
 
       {/* Main Content */}
-      <div style={{ 
-        paddingTop: "70px", // Proper spacing for header
-        padding: "1rem", 
-        maxWidth: "1200px", 
+      <div style={{
+        paddingTop: "85px",
+        padding: "clamp(0.8rem, 3vw, 1.5rem)",
+        maxWidth: "1400px",
         margin: "0 auto"
       }}>
-        {/* Compact Header Section */}
-        <div style={{ marginBottom: "1rem" }}>
-          {/* Title and Season Badge in one line */}
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center",
-            gap: "1rem",
-            marginBottom: "1rem",
-            flexWrap: "wrap"
+        {/* Bold Header Section */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          {/* Title */}
+          <div style={{
+            marginBottom: "1.2rem",
+            textAlign: "center"
           }}>
-            <h1 style={{ 
-              color: "#000000", 
-              fontSize: "1.75rem", 
-              fontWeight: "600",
-              margin: "0",
-              letterSpacing: "-0.01em"
+            <div className="color-block-purple" style={{
+              padding: '1rem 2rem',
+              display: 'inline-block',
+              border: '3px solid hsl(var(--celo-black))',
+              position: 'relative',
+              boxShadow: '3px 3px 0px hsl(var(--celo-black))'
             }}>
-              🏆 Top Performers
-            </h1>
-            
-            {/* Season Badge - compact version */}
-            {rewardsConfig.seasonEndDate && (
-              <div style={{ 
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.25rem",
-                background: daysRemaining <= 7 ? "#fef3c7" : "#f0f9ff",
-                padding: "0.25rem 0.75rem",
-                borderRadius: "16px",
-                border: `1px solid ${daysRemaining <= 7 ? "#f59e0b" : "#3b82f6"}`,
-                fontSize: "0.8rem",
-                fontWeight: "600",
-                color: daysRemaining <= 7 ? "#92400e" : "#1e40af"
+              <div style={{
+                position: 'absolute',
+                top: '-10px',
+                left: '-10px',
+                width: '40px',
+                height: '8px',
+                background: 'hsl(var(--celo-yellow))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <h1 className="text-headline-thin" style={{
+                color: 'hsl(var(--celo-white))',
+                fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
+                margin: '0',
+                textTransform: 'uppercase'
               }}>
-                <span>{daysRemaining <= 7 ? "⚡" : "📅"}</span>
-                <span>{daysRemaining}d left</span>
+                🏆 Top <span style={{ fontStyle: 'italic', color: 'hsl(var(--celo-white))' }}>Performers</span>
+              </h1>
+            </div>
+            {rewardsConfig.seasonEndDate && (
+              <div className="color-block" style={{ 
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: daysRemaining <= 7 ? 'hsl(var(--celo-yellow))' : 'hsl(var(--celo-tan-2))',
+                padding: '0.5rem 1rem',
+                border: '3px solid hsl(var(--celo-black))',
+                fontSize: '0.9rem',
+                fontWeight: 'var(--font-weight-body-black)',
+                color: 'hsl(var(--celo-black))',
+                textTransform: 'uppercase',
+                marginTop: '1rem'
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>{daysRemaining <= 7 ? '⚡' : '📅'}</span>
+                <span>{daysRemaining} days left</span>
               </div>
             )}
           </div>
           
-          {/* Compact Stats Cards */}
+          {/* Stats Cards */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "0.75rem",
-            background: "#ffffff",
-            padding: "1rem",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
+            gap: "1rem"
           }}>
             {/* Pool Card */}
-            <div 
-              style={{ 
-                textAlign: "center", 
+            <div
+              className="color-block"
+              style={{
+                textAlign: "center",
+                padding: "1.2rem",
+                background: 'hsl(var(--celo-white))',
+                border: '3px solid hsl(var(--celo-black))',
                 position: "relative",
-                padding: "0.5rem"
+                boxShadow: '3px 3px 0px hsl(var(--celo-black))'
               }}
               onMouseEnter={() => setShowTooltip('pool')}
               onMouseLeave={() => setShowTooltip(null)}
             >
-              <div style={{ 
-                fontSize: "1.25rem", 
-                fontWeight: "700", 
-                color: "#000000",
-                lineHeight: "1.2"
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                width: '25px',
+                height: '5px',
+                background: 'hsl(var(--celo-yellow))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-black" style={{ 
+                fontSize: "2.5rem",
+                color: 'hsl(var(--celo-black))',
+                lineHeight: "1",
+                marginBottom: '0.5rem'
               }}>
                 {rewardsConfig.totalReward >= 1000 
                   ? `${(rewardsConfig.totalReward / 1000).toFixed(0)}K` 
                   : rewardsConfig.totalReward}
               </div>
-              <div style={{ 
-                fontSize: "0.7rem", 
-                color: "#666666",
-                fontWeight: "500",
+              <div className="text-body-heavy" style={{ 
+                fontSize: "0.75rem",
+                color: 'hsl(var(--celo-brown))',
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
               }}>
-                {rewardsConfig.currency} Pool ℹ️
+                {rewardsConfig.currency} Pool
               </div>
               {showTooltip === 'pool' && (
                 <div style={{
@@ -193,31 +211,43 @@ function LeaderboardPage() {
             </div>
             
             {/* Winners Card */}
-            <div 
-              style={{ 
-                textAlign: "center", 
+            <div
+              className="color-block"
+              style={{
+                textAlign: "center",
+                padding: "1.2rem",
+                background: 'hsl(var(--celo-white))',
+                border: '3px solid hsl(var(--celo-black))',
                 position: "relative",
-                padding: "0.5rem"
+                boxShadow: '3px 3px 0px hsl(var(--celo-black))'
               }}
               onMouseEnter={() => setShowTooltip('winners')}
               onMouseLeave={() => setShowTooltip(null)}
             >
-              <div style={{ 
-                fontSize: "1.25rem", 
-                fontWeight: "700", 
-                color: "#000000",
-                lineHeight: "1.2"
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                width: '25px',
+                height: '5px',
+                background: 'hsl(var(--celo-green))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-black" style={{ 
+                fontSize: "2.5rem",
+                color: 'hsl(var(--celo-black))',
+                lineHeight: "1",
+                marginBottom: '0.5rem'
               }}>
                 {rewardsConfig.maxWinners}
               </div>
-              <div style={{ 
-                fontSize: "0.7rem", 
-                color: "#666666",
-                fontWeight: "500",
+              <div className="text-body-heavy" style={{ 
+                fontSize: "0.75rem",
+                color: 'hsl(var(--celo-brown))',
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
               }}>
-                Winners ℹ️
+                Winners
               </div>
               {showTooltip === 'winners' && (
                 <div style={{
@@ -240,22 +270,35 @@ function LeaderboardPage() {
             </div>
             
             {/* Network Card */}
-            <div style={{ 
+            <div className="color-block" style={{
               textAlign: "center",
-              padding: "0.5rem"
+              padding: "1.2rem",
+              background: 'hsl(var(--celo-white))',
+              border: '3px solid hsl(var(--celo-black))',
+              position: 'relative',
+              boxShadow: '3px 3px 0px hsl(var(--celo-black))'
             }}>
-              <div style={{ 
-                fontSize: "1.25rem", 
-                fontWeight: "700", 
-                color: "#000000",
-                lineHeight: "1.2"
+              <div style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                width: '25px',
+                height: '5px',
+                background: 'hsl(var(--celo-purple))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-black" style={{
+                fontSize: "1.5rem",
+                color: 'hsl(var(--celo-black))',
+                lineHeight: "1",
+                marginBottom: '0.4rem',
+                textTransform: 'uppercase'
               }}>
                 {chainName}
               </div>
-              <div style={{ 
-                fontSize: "0.7rem", 
-                color: "#666666",
-                fontWeight: "500",
+              <div className="text-body-heavy" style={{ 
+                fontSize: "0.75rem",
+                color: 'hsl(var(--celo-brown))',
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
               }}>
@@ -479,10 +522,9 @@ function LeaderboardPage() {
             
             {/* Leaderboard Table */}
             <div style={{ 
-              background: "#ffffff",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
+              background: 'hsl(var(--celo-white))',
+              border: '3px solid hsl(var(--celo-black))',
+              boxShadow: '6px 6px 0px hsl(var(--celo-black))'
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>

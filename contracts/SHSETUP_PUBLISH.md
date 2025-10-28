@@ -12,3 +12,8 @@ source .env && rm -rf cache out && forge build && forge script --chain 42220 scr
 ```bash
 source .env && rm -rf cache out && forge build && forge script --chain 42220 script/ChickenGame.s.sol:ChickenGameScript --rpc-url https://forno.celo.org --broadcast --verify -vvvv --private-key ${PRIVATE_KEY}
 ```
+
+### ChickenGame (Base)
+```bash
+source .env && rm -rf cache out && forge build && forge script --chain 8453 script/ChickenGame.s.sol:ChickenGameScript --rpc-url https://mainnet.base.org --broadcast --verify -vvvv --private-key ${PRIVATE_KEY}
+```

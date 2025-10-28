@@ -13,8 +13,8 @@ export const Route = createRootRoute({
       <GlobalHeader />
       <main style={{ 
         flex: '1',
-        paddingTop: 'clamp(90px, 12vw, 120px)',
-        paddingBottom: 'clamp(100px, 15vw, 140px)',
+        paddingTop: 'clamp(70px, 8vw, 80px)',
+        paddingBottom: 'clamp(60px, 10vw, 80px)',
         position: 'relative',
         background: 'hsl(var(--background))',
         minHeight: 'calc(100vh - 160px)'
