@@ -5,15 +5,17 @@ interface ButtonProps {
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function Button({ 
-  children, 
-  onClick, 
-  variant = 'primary', 
-  size = 'md', 
+export function Button({
+  children,
+  onClick,
+  variant = 'primary',
+  size = 'md',
   disabled = false,
-  className = ''
+  className = '',
+  style
 }: ButtonProps) {
   const baseClasses = "btn-industrial inline-flex items-center justify-center";
   
@@ -41,10 +43,10 @@ export function Button({
   };
   
   return (
-    <button 
+    <button
       onClick={onClick}
       disabled={disabled}
-      style={buttonStyle}
+      style={{ ...buttonStyle, ...style }}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClasses} ${className}`}
     >
       {children}
