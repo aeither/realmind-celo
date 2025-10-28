@@ -71,7 +71,7 @@
     --celo-blue: 208 79% 77%;   /* #8AC0F9 - DIGITAL GLOW */
 
     /* ARCHITECTURAL DESIGN TOKENS - raw and structural */
-    --background: var(--celo-tan);
+    --background: 32 72% 96%; /* #FDF7F3 - Celo soft cream */
     --foreground: var(--celo-black);
     --card: var(--celo-white);
     --card-foreground: var(--celo-black);

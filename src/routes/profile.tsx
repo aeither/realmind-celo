@@ -120,7 +120,7 @@ function ProfilePage() {
 
   if (!isConnected) {
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--celo-yellow))' }}>
+      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
         <GlobalHeader />
         <div className="flex flex-col items-center justify-center" style={{ minHeight: 'calc(100vh - 160px)', padding: '2rem 1rem' }}>
           <div className="text-center max-w-md">
@@ -166,7 +166,7 @@ function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--celo-yellow))' }}>
+      <div style={{ minHeight: '100vh', paddingBottom: '80px', background: 'hsl(var(--background))' }}>
         <GlobalHeader />
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 160px)' }}>
           <div className="text-center">
@@ -180,9 +180,9 @@ function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--celo-yellow))' }}>
+    <div style={{ minHeight: '100vh', paddingBottom: '70px', background: 'hsl(var(--background))' }}>
       <GlobalHeader />
-      <div className="container mx-auto px-4 max-w-4xl" style={{ paddingTop: '100px', paddingBottom: '1rem' }}>
+      <div className="container mx-auto px-4 max-w-4xl" style={{ paddingTop: '20px', paddingBottom: '20px' }}>
         <div className="color-block" style={{
           background: 'hsl(var(--celo-white))',
           border: '3px solid hsl(var(--celo-black))',

@@ -151,6 +151,7 @@ function HomePage() {
   const [currentQuizTitle, setCurrentQuizTitle] = useState<string>('');
   const [currentQuizDescription, setCurrentQuizDescription] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [isHowToPlayExpanded, setIsHowToPlayExpanded] = useState<boolean>(false);
   
   // Get backend URL from environment
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -316,7 +317,7 @@ function HomePage() {
       <div style={{
         minHeight: "100vh",
         paddingBottom: "70px",
-        background: "hsl(var(--celo-yellow))"
+        background: "hsl(var(--background))"
       }}>
       <GlobalHeader />
 
@@ -328,18 +329,19 @@ function HomePage() {
         margin: "0 auto"
       }}>
         {/* Hero Section - Compact */}
-        <div className="color-block-purple" style={{
+        <div style={{
           textAlign: "center",
           marginBottom: "1.5rem",
           padding: "1.5rem",
           border: "3px solid hsl(var(--celo-black))",
           position: "relative",
-          boxShadow: "4px 4px 0px hsl(var(--celo-black))"
+          boxShadow: "4px 4px 0px hsl(var(--celo-black))",
+          background: "hsl(var(--celo-yellow))"
         }}>
           <h1 className="text-headline-thin" style={{
             fontSize: "clamp(2rem, 8vw, 3.5rem)",
             marginBottom: "0.8rem",
-            color: "hsl(var(--celo-yellow))",
+            color: "hsl(var(--celo-black))",
             textTransform: "uppercase",
             lineHeight: "1",
             margin: "0"
@@ -349,7 +351,7 @@ function HomePage() {
 
           <p className="text-body-heavy" style={{
             fontSize: "clamp(0.75rem, 2.5vw, 0.9rem)",
-            color: "hsl(var(--celo-white))",
+            color: "hsl(var(--celo-purple))",
             textTransform: "uppercase",
             letterSpacing: "0.02em",
             fontWeight: "var(--font-weight-body-heavy)",
@@ -358,6 +360,178 @@ function HomePage() {
           }}>
             Master CELO blockchain, Compete for the prize pool
           </p>
+        </div>
+
+        {/* How to Play - Expandable Section */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <button
+            onClick={() => setIsHowToPlayExpanded(!isHowToPlayExpanded)}
+            style={{
+              width: "100%",
+              background: "hsl(var(--celo-white))",
+              border: "3px solid hsl(var(--celo-black))",
+              padding: "1rem 1.5rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              cursor: "pointer",
+              transition: "var(--transition-fast)",
+              boxShadow: "3px 3px 0px hsl(var(--celo-black))"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "hsl(var(--celo-tan-2))";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "hsl(var(--celo-white))";
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
+              <span style={{ fontSize: "1.5rem" }}>❓</span>
+              <h3 className="text-body-black" style={{
+                fontSize: "clamp(1rem, 3vw, 1.3rem)",
+                margin: "0",
+                textTransform: "uppercase",
+                color: "hsl(var(--celo-black))"
+              }}>
+                How to Play
+              </h3>
+            </div>
+            <span style={{
+              fontSize: "1.5rem",
+              transition: "var(--transition-fast)",
+              transform: isHowToPlayExpanded ? "rotate(180deg)" : "rotate(0deg)",
+              display: "inline-block"
+            }}>
+              ▼
+            </span>
+          </button>
+
+          {isHowToPlayExpanded && (
+            <div style={{
+              background: "hsl(var(--celo-white))",
+              border: "3px solid hsl(var(--celo-black))",
+              borderTop: "none",
+              padding: "1.5rem",
+              boxShadow: "3px 3px 0px hsl(var(--celo-black))"
+            }}>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.2rem"
+              }}>
+                {/* Step 1 */}
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div style={{
+                    background: "hsl(var(--celo-yellow))",
+                    border: "3px solid hsl(var(--celo-black))",
+                    width: "40px",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
+                    <span className="text-body-black" style={{
+                      fontSize: "1.2rem",
+                      color: "hsl(var(--celo-black))"
+                    }}>1</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 className="text-body-black" style={{
+                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
+                      margin: "0 0 0.3rem 0",
+                      textTransform: "uppercase",
+                      color: "hsl(var(--celo-black))"
+                    }}>
+                      Play CELO Quizzes
+                    </h4>
+                    <p className="text-body-heavy" style={{
+                      fontSize: "0.85rem",
+                      margin: "0",
+                      color: "hsl(var(--celo-brown))",
+                      lineHeight: "1.4"
+                    }}>
+                      Choose from our curated CELO quizzes below and test your blockchain knowledge
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div style={{
+                    background: "hsl(var(--celo-yellow))",
+                    border: "3px solid hsl(var(--celo-black))",
+                    width: "40px",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
+                    <span className="text-body-black" style={{
+                      fontSize: "1.2rem",
+                      color: "hsl(var(--celo-black))"
+                    }}>2</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 className="text-body-black" style={{
+                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
+                      margin: "0 0 0.3rem 0",
+                      textTransform: "uppercase",
+                      color: "hsl(var(--celo-black))"
+                    }}>
+                      Earn XP Points
+                    </h4>
+                    <p className="text-body-heavy" style={{
+                      fontSize: "0.85rem",
+                      margin: "0",
+                      color: "hsl(var(--celo-brown))",
+                      lineHeight: "1.4"
+                    }}>
+                      Complete quizzes to earn XP points and climb the leaderboard rankings
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div style={{
+                    background: "hsl(var(--celo-yellow))",
+                    border: "3px solid hsl(var(--celo-black))",
+                    width: "40px",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0
+                  }}>
+                    <span className="text-body-black" style={{
+                      fontSize: "1.2rem",
+                      color: "hsl(var(--celo-black))"
+                    }}>3</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 className="text-body-black" style={{
+                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
+                      margin: "0 0 0.3rem 0",
+                      textTransform: "uppercase",
+                      color: "hsl(var(--celo-black))"
+                    }}>
+                      Claim Real CELO Rewards
+                    </h4>
+                    <p className="text-body-heavy" style={{
+                      fontSize: "0.85rem",
+                      margin: "0",
+                      color: "hsl(var(--celo-brown))",
+                      lineHeight: "1.4"
+                    }}>
+                      Top players share the prize pool and receive real CELO tokens as rewards
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Daily Quiz Section - More Compact */}
