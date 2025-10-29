@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {ChickenGame, EggToken} from "../src/ChickenGame.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -82,7 +82,7 @@ contract ChickenGameTest is Test {
 
         // Store the mock USDT reference at the hardcoded address for balance tracking
         // We'll mint directly to the hardcoded address storage slots
-        address hardcodedUSDT = chickenGame.USDT_ADDRESS();
+        address hardcodedUsdt = chickenGame.USDT_ADDRESS();
 
         // Mint USDT to players - use vm.store to set balances in the storage at hardcoded address
         // For ERC20, balance is typically at keccak256(abi.encode(address, slot))
@@ -91,20 +91,20 @@ contract ChickenGameTest is Test {
         bytes32 player1BalanceSlot = keccak256(abi.encode(player1, uint256(0)));
         bytes32 player2BalanceSlot = keccak256(abi.encode(player2, uint256(0)));
 
-        vm.store(hardcodedUSDT, player1BalanceSlot, bytes32(uint256(100000 * 10**6)));
-        vm.store(hardcodedUSDT, player2BalanceSlot, bytes32(uint256(50000 * 10**6)));
+        vm.store(hardcodedUsdt, player1BalanceSlot, bytes32(uint256(100000 * 10**6)));
+        vm.store(hardcodedUsdt, player2BalanceSlot, bytes32(uint256(50000 * 10**6)));
 
         // Also need to store total supply at slot 2
         uint256 totalSupply = 150000 * 10**6;
-        vm.store(hardcodedUSDT, bytes32(uint256(2)), bytes32(totalSupply));
+        vm.store(hardcodedUsdt, bytes32(uint256(2)), bytes32(totalSupply));
 
         // Get reference to USDT at the hardcoded address for tests to use
-        usdtAtHardcodedAddress = IERC20(hardcodedUSDT);
+        usdtAtHardcodedAddress = IERC20(hardcodedUsdt);
     }
 
     // ========== INITIALIZATION TESTS ==========
 
-    function testInitialChickenState() public {
+    function testInitialChickenState() public view {
         (
             uint256 happiness,
             uint256 lastFeedTime,
@@ -328,7 +328,7 @@ contract ChickenGameTest is Test {
 
     // ========== VIEW FUNCTION TESTS ==========
 
-    function testIsActionAvailableForNewUser() public {
+    function testIsActionAvailableForNewUser() public view {
         // All actions should be available for new users
         assertTrue(chickenGame.isActionAvailable(player1, 0)); // Feed
         assertTrue(chickenGame.isActionAvailable(player1, 1)); // Pet
@@ -373,7 +373,7 @@ contract ChickenGameTest is Test {
         assertTrue(chickenGame.isActionAvailable(player1, 2));
     }
 
-    function testGetTimeUntilNextActionWithInstantActions() public {
+    function testGetTimeUntilNextActionWithInstantActions() public view {
         // Should return 0 for new users
         assertEq(chickenGame.getTimeUntilNextAction(player1, 0), 0);
         assertEq(chickenGame.getTimeUntilNextAction(player1, 1), 0);
@@ -466,7 +466,7 @@ contract ChickenGameTest is Test {
 
     // ========== EGG TOKEN TESTS ==========
 
-    function testEggTokenHasCorrectNameAndSymbol() public {
+    function testEggTokenHasCorrectNameAndSymbol() public view {
         assertEq(eggToken.name(), "Egg Token");
         assertEq(eggToken.symbol(), "EGG");
     }
@@ -749,7 +749,7 @@ contract ChickenGameTest is Test {
 
     // ========== STAKING CALCULATION TESTS ==========
 
-    function testCalculateFreeActionsForVariousAmounts() public {
+    function testCalculateFreeActionsForVariousAmounts() public view {
         assertEq(chickenGame.calculateFreeActions(0), 0);
         assertEq(chickenGame.calculateFreeActions(500 * 10**6), 0); // 500 USDT
         assertEq(chickenGame.calculateFreeActions(1000 * 10**6), 1); // 1000 USDT
@@ -760,7 +760,7 @@ contract ChickenGameTest is Test {
 
     // ========== OWNERSHIP TESTS ==========
 
-    function testOwnerIsSetCorrectly() public {
+    function testOwnerIsSetCorrectly() public view {
         assertEq(chickenGame.owner(), admin);
     }
 
