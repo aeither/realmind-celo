@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -40,7 +41,12 @@ contract EggToken is ERC20, AccessControl {
  */
 contract ChickenGame is ReentrancyGuard {
     EggToken public eggToken;
-    
+    IERC20 public usdtToken;
+    address public owner;
+
+    // USDT token address on Celo
+    address public constant USDT_ADDRESS = 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e;
+
     // Cooldown period between actions (24 hours)
     uint256 public constant ACTION_COOLDOWN = 24 hours;
     
@@ -56,6 +62,9 @@ contract ChickenGame is ReentrancyGuard {
     // Number of free instant actions for new users (onboarding)
     uint256 public constant FREE_INSTANT_ACTIONS = 10;
 
+    // USDT staking: 1 free action per 1000 USDT (USDT has 6 decimals)
+    uint256 public constant USDT_PER_ACTION = 1000 * 10**6; // 1000 USDT
+
     struct Chicken {
         uint256 happiness;
         uint256 lastFeedTime;
@@ -67,13 +76,26 @@ contract ChickenGame is ReentrancyGuard {
     }
 
     mapping(address => Chicken) public chickens;
+    mapping(address => uint256) public stakedBalance;
 
     event ActionPerformed(address indexed user, string actionType, uint256 newHappiness);
     event EggLaid(address indexed user, uint256 amount, uint256 totalEggs);
     event ChickenHappinessReset(address indexed user);
+    event Staked(address indexed user, uint256 amount, uint256 freeActionsGranted);
+    event Unstaked(address indexed user, uint256 amount);
+    event EmergencyWithdraw(address indexed admin, uint256 amount);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor(address _eggTokenAddress) {
         eggToken = EggToken(_eggTokenAddress);
+        usdtToken = IERC20(USDT_ADDRESS);
+        owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "ChickenGame: caller is not the owner");
+        _;
     }
 
     /**
@@ -193,6 +215,91 @@ contract ChickenGame is ReentrancyGuard {
     }
 
     /**
+     * @dev Stake USDT to earn free instant actions
+     * Users get 1 free action for every 1000 USDT staked
+     * @param amount Amount of USDT to stake (in USDT's smallest unit, 6 decimals)
+     */
+    function stakeUSDT(uint256 amount) external nonReentrant {
+        require(amount > 0, "ChickenGame: Amount must be greater than 0");
+
+        // Initialize chicken if needed
+        _initializeChicken(msg.sender);
+
+        // Transfer USDT from user to contract
+        require(
+            usdtToken.transferFrom(msg.sender, address(this), amount),
+            "ChickenGame: USDT transfer failed"
+        );
+
+        // Calculate free actions (1 action per 1000 USDT)
+        uint256 freeActions = amount / USDT_PER_ACTION;
+
+        // Update staked balance
+        stakedBalance[msg.sender] += amount;
+
+        // Grant free actions
+        if (freeActions > 0) {
+            chickens[msg.sender].instantActionsRemaining += freeActions;
+        }
+
+        emit Staked(msg.sender, amount, freeActions);
+    }
+
+    /**
+     * @dev Unstake USDT
+     * @param amount Amount of USDT to unstake
+     */
+    function unstakeUSDT(uint256 amount) external nonReentrant {
+        require(amount > 0, "ChickenGame: Amount must be greater than 0");
+        require(
+            stakedBalance[msg.sender] >= amount,
+            "ChickenGame: Insufficient staked balance"
+        );
+
+        // Update staked balance
+        stakedBalance[msg.sender] -= amount;
+
+        // Transfer USDT back to user
+        require(
+            usdtToken.transfer(msg.sender, amount),
+            "ChickenGame: USDT transfer failed"
+        );
+
+        emit Unstaked(msg.sender, amount);
+    }
+
+    /**
+     * @dev Emergency withdraw all USDT from the contract (only owner)
+     * This function should only be used in case of emergency
+     * @param recipient Address to receive the USDT
+     */
+    function emergencyWithdrawUSDT(address recipient) external onlyOwner nonReentrant {
+        require(recipient != address(0), "ChickenGame: Invalid recipient address");
+
+        uint256 balance = usdtToken.balanceOf(address(this));
+        require(balance > 0, "ChickenGame: No USDT to withdraw");
+
+        // Transfer all USDT to recipient
+        require(
+            usdtToken.transfer(recipient, balance),
+            "ChickenGame: USDT transfer failed"
+        );
+
+        emit EmergencyWithdraw(recipient, balance);
+    }
+
+    /**
+     * @dev Transfer ownership of the contract to a new owner
+     * @param newOwner Address of the new owner
+     */
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "ChickenGame: New owner is the zero address");
+        address oldOwner = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    /**
      * @dev Get chicken data for a specific user
      * @param user Address of the chicken owner
      * @return happiness Current happiness level
@@ -292,6 +399,24 @@ contract ChickenGame is ReentrancyGuard {
      */
     function canLayEgg(address user) external view returns (bool) {
         return chickens[user].happiness >= MAX_HAPPINESS;
+    }
+
+    /**
+     * @dev Get staked USDT balance for a user
+     * @param user Address of the user
+     * @return uint256 Amount of USDT staked
+     */
+    function getStakedBalance(address user) external view returns (uint256) {
+        return stakedBalance[user];
+    }
+
+    /**
+     * @dev Calculate how many free actions would be granted for a given USDT amount
+     * @param amount Amount of USDT (in USDT's smallest unit, 6 decimals)
+     * @return uint256 Number of free actions that would be granted
+     */
+    function calculateFreeActions(uint256 amount) external pure returns (uint256) {
+        return amount / USDT_PER_ACTION;
     }
 }
 
