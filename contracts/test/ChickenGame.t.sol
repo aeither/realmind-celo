@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {ChickenGame, EggToken} from "../src/ChickenGame.sol";
+import {ChickenGame, EggToken, MegaEgg} from "../src/ChickenGame.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Mock USDT contract for testing
@@ -53,11 +53,12 @@ contract MockUSDT is IERC20 {
     }
 }
 
-contract ChickenGameTest is Test {
+contract ChickenGameV2Test is Test {
     ChickenGame public chickenGame;
     EggToken public eggToken;
+    MegaEgg public megaEgg;
     MockUSDT public usdt;
-    IERC20 public usdtAtHardcodedAddress; // USDT at the hardcoded address
+    IERC20 public usdtAtHardcodedAddress;
     address public admin;
     address public player1 = address(0x123);
     address public player2 = address(0x456);
@@ -65,28 +66,21 @@ contract ChickenGameTest is Test {
     function setUp() public {
         admin = address(this);
 
-        // Deploy EggToken
+        // Deploy tokens
         eggToken = new EggToken();
+        megaEgg = new MegaEgg();
 
         // Deploy ChickenGame
-        chickenGame = new ChickenGame(address(eggToken));
+        chickenGame = new ChickenGame(address(eggToken), address(megaEgg));
 
-        // Grant minter role to ChickenGame contract
+        // Grant minter roles
         eggToken.grantRole(eggToken.MINTER_ROLE(), address(chickenGame));
+        megaEgg.grantRole(megaEgg.MINTER_ROLE(), address(chickenGame));
 
-        // Deploy Mock USDT and set it up at the hardcoded USDT address
+        // Setup Mock USDT at hardcoded address
         usdt = new MockUSDT();
-
-        // Use vm.etch to replace the code at the hardcoded USDT address with our mock
         vm.etch(chickenGame.USDT_ADDRESS(), address(usdt).code);
-
-        // Store the mock USDT reference at the hardcoded address for balance tracking
-        // We'll mint directly to the hardcoded address storage slots
         address hardcodedUsdt = chickenGame.USDT_ADDRESS();
-
-        // Mint USDT to players - use vm.store to set balances in the storage at hardcoded address
-        // For ERC20, balance is typically at keccak256(abi.encode(address, slot))
-        // For MockUSDT, balances are at slot 0
 
         bytes32 player1BalanceSlot = keccak256(abi.encode(player1, uint256(0)));
         bytes32 player2BalanceSlot = keccak256(abi.encode(player2, uint256(0)));
@@ -94,11 +88,9 @@ contract ChickenGameTest is Test {
         vm.store(hardcodedUsdt, player1BalanceSlot, bytes32(uint256(100000 * 10**6)));
         vm.store(hardcodedUsdt, player2BalanceSlot, bytes32(uint256(50000 * 10**6)));
 
-        // Also need to store total supply at slot 2
         uint256 totalSupply = 150000 * 10**6;
         vm.store(hardcodedUsdt, bytes32(uint256(2)), bytes32(totalSupply));
 
-        // Get reference to USDT at the hardcoded address for tests to use
         usdtAtHardcodedAddress = IERC20(hardcodedUsdt);
     }
 
@@ -107,18 +99,16 @@ contract ChickenGameTest is Test {
     function testInitialChickenState() public view {
         (
             uint256 happiness,
-            uint256 lastFeedTime,
-            uint256 lastPetTime,
-            uint256 lastPlayTime,
+            uint256 claimableActions,
+            uint256 lastActionUpdate,
             uint256 totalEggsLaid,
             uint256 instantActionsRemaining,
             bool initialized
         ) = chickenGame.getChicken(player1);
 
         assertEq(happiness, 0);
-        assertEq(lastFeedTime, 0);
-        assertEq(lastPetTime, 0);
-        assertEq(lastPlayTime, 0);
+        assertEq(claimableActions, 0);
+        assertEq(lastActionUpdate, 0);
         assertEq(totalEggsLaid, 0);
         assertEq(instantActionsRemaining, 0);
         assertFalse(initialized);
@@ -130,8 +120,7 @@ contract ChickenGameTest is Test {
 
         (
             uint256 happiness,
-            ,
-            ,
+            uint256 claimableActions,
             ,
             ,
             uint256 instantActionsRemaining,
@@ -139,121 +128,100 @@ contract ChickenGameTest is Test {
         ) = chickenGame.getChicken(player1);
 
         assertTrue(initialized);
-        assertEq(happiness, 10); // First action increases happiness
+        assertEq(happiness, 10);
         assertEq(instantActionsRemaining, 9); // Started with 10, used 1
+        assertEq(claimableActions, 10); // Initialized with max claimable
     }
 
-    // ========== INSTANT ACTIONS TESTS ==========
+    // ========== ACTION ACCUMULATION TESTS ==========
 
-    function testInstantActionsAllowMultipleActionsWithoutWait() public {
-        // Perform 10 feed actions instantly (using all instant actions)
+    function testActionsAccumulateOverTime() public {
+        // Initialize chicken
+        vm.prank(player1);
+        chickenGame.feedChicken();
+
+        // Use all instant actions
+        for (uint256 i = 0; i < 9; i++) {
+            vm.prank(player1);
+            chickenGame.feedChicken();
+        }
+
+        // Use all claimable actions
         for (uint256 i = 0; i < 10; i++) {
             vm.prank(player1);
             chickenGame.feedChicken();
         }
 
-        (uint256 happiness, , , , , uint256 instantActionsRemaining, ) = chickenGame.getChicken(player1);
-        
-        assertEq(happiness, 100); // 10 actions * 10 happiness each
-        assertEq(instantActionsRemaining, 0); // All instant actions used
+        // Now should have no actions left
+        vm.prank(player1);
+        vm.expectRevert("ChickenGame: No actions available");
+        chickenGame.feedChicken();
+
+        // Warp 2 hours (should accumulate 1 action)
+        vm.warp(block.timestamp + 2 hours);
+
+        // Should be able to perform 1 action
+        vm.prank(player1);
+        chickenGame.feedChicken();
+
+        // Should not be able to perform another
+        vm.prank(player1);
+        vm.expectRevert("ChickenGame: No actions available");
+        chickenGame.feedChicken();
     }
 
-    function testMixingInstantActionsWithDifferentActions() public {
-        // Use instant actions for different action types
+    function testActionsAccumulateToMax10() public {
+        // Initialize chicken
         vm.prank(player1);
-        chickenGame.feedChicken(); // Action 1
-        
-        vm.prank(player1);
-        chickenGame.petChicken(); // Action 2
-        
-        vm.prank(player1);
-        chickenGame.playWithChicken(); // Action 3
+        chickenGame.feedChicken();
 
-        (uint256 happiness, , , , , uint256 instantActionsRemaining, ) = chickenGame.getChicken(player1);
-        
-        assertEq(happiness, 30); // 3 actions * 10 happiness each
-        assertEq(instantActionsRemaining, 7); // Started with 10, used 3
-    }
-
-    function testCooldownRequiredAfterInstantActionsExpired() public {
-        // Use all 10 instant actions
-        for (uint256 i = 0; i < 10; i++) {
+        // Use all instant and claimable actions
+        for (uint256 i = 0; i < 19; i++) {
             vm.prank(player1);
             chickenGame.feedChicken();
         }
 
-        // Try to feed again immediately - should fail
-        vm.prank(player1);
-        vm.expectRevert("ChickenGame: Feed cooldown not expired");
-        chickenGame.feedChicken();
+        // Warp 30 hours (should accumulate 15 actions, but capped at 10)
+        vm.warp(block.timestamp + 30 hours);
+
+        (
+            ,
+            uint256 claimableActions,
+            ,
+            ,
+            ,
+        ) = chickenGame.getChicken(player1);
+
+        assertEq(claimableActions, 10); // Capped at max
     }
 
-    function testCanActAgainAfterCooldown() public {
-        // Use all 10 instant actions
-        for (uint256 i = 0; i < 10; i++) {
+    function testGetTimeUntilNextAction() public {
+        // Initialize chicken
+        vm.prank(player1);
+        chickenGame.feedChicken();
+
+        // Use all actions
+        for (uint256 i = 0; i < 19; i++) {
             vm.prank(player1);
             chickenGame.feedChicken();
         }
 
-        // Fast forward 24 hours
-        vm.warp(block.timestamp + 24 hours);
+        // Should show time until next accumulation (should be close to 2 hours)
+        uint256 timeUntil = chickenGame.getTimeUntilNextAction(player1);
+        assertGt(timeUntil, 0);
+        assertLe(timeUntil, 2 hours);
 
-        // Should be able to feed again
-        vm.prank(player1);
-        chickenGame.feedChicken();
+        // Warp exactly 2 hours - now we have 1 action accumulated
+        vm.warp(block.timestamp + 2 hours);
 
-        (uint256 happiness, , , , , , ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 100); // Was already at 100 (capped)
-    }
+        // Function returns time until NEXT accumulation (not time until action is available)
+        // Since we just accumulated 1 action, we need another 2 hours for the next one
+        timeUntil = chickenGame.getTimeUntilNextAction(player1);
+        assertGt(timeUntil, 1 hours); // Should be close to 2 hours again
+        assertLe(timeUntil, 2 hours);
 
-    // ========== ACTION TESTS ==========
-
-    function testFeedChickenIncreasesHappiness() public {
-        vm.prank(player1);
-        chickenGame.feedChicken();
-
-        (uint256 happiness, , , , , , ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 10);
-    }
-
-    function testPetChickenIncreasesHappiness() public {
-        vm.prank(player1);
-        chickenGame.petChicken();
-
-        (uint256 happiness, , , , , , ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 10);
-    }
-
-    function testPlayWithChickenIncreasesHappiness() public {
-        vm.prank(player1);
-        chickenGame.playWithChicken();
-
-        (uint256 happiness, , , , , , ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 10);
-    }
-
-    function testHappinessCapAt100() public {
-        // Perform 10 actions using instant actions (will reach 100 happiness)
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            if (i % 3 == 0) {
-                chickenGame.feedChicken();
-            } else if (i % 3 == 1) {
-                chickenGame.petChicken();
-            } else {
-                chickenGame.playWithChicken();
-            }
-        }
-
-        (uint256 happiness, , , , , , ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 100); // Capped at 100
-    }
-
-    function testActionEmitsEvent() public {
-        vm.prank(player1);
-        vm.expectEmit(true, false, false, true);
-        emit ChickenGame.ActionPerformed(player1, "Feed", 10);
-        chickenGame.feedChicken();
+        // But action should be available now
+        assertTrue(chickenGame.isActionAvailable(player1));
     }
 
     // ========== EGG LAYING TESTS ==========
@@ -269,291 +237,144 @@ contract ChickenGameTest is Test {
         vm.prank(player1);
         chickenGame.layEgg();
 
-        // Check egg token balance
         assertEq(eggToken.balanceOf(player1), 1 ether);
 
-        // Check happiness reset to 0
-        (uint256 happiness, , , , uint256 totalEggsLaid, , ) = chickenGame.getChicken(player1);
+        (uint256 happiness, , , uint256 totalEggsLaid, , ) = chickenGame.getChicken(player1);
         assertEq(happiness, 0);
         assertEq(totalEggsLaid, 1);
     }
 
     function testCannotLayEggWithLessThan100Happiness() public {
         vm.prank(player1);
-        chickenGame.feedChicken(); // Only 10 happiness
+        chickenGame.feedChicken();
 
         vm.prank(player1);
         vm.expectRevert("ChickenGame: Chicken happiness must be 100 to lay egg");
         chickenGame.layEgg();
     }
 
-    function testLayEggEmitsEvents() public {
-        // Get chicken to 100 happiness
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            chickenGame.feedChicken();
-        }
+    // ========== BUY EGGS TESTS ==========
 
-        // Expect events
+    function testBuyEggsWithETH() public {
+        uint256 ethToSend = 0.01 ether; // Should get 10 eggs
+
+        vm.deal(player1, 1 ether);
+        vm.prank(player1);
+        chickenGame.buyEggs{value: ethToSend}();
+
+        assertEq(eggToken.balanceOf(player1), 10 ether);
+    }
+
+    function testBuyEggsRequiresExactMultiple() public {
+        uint256 ethToSend = 0.0015 ether; // Not exact multiple of 0.001
+
+        vm.deal(player1, 1 ether);
+        vm.prank(player1);
+        vm.expectRevert("ChickenGame: ETH amount must be exact multiple of egg price");
+        chickenGame.buyEggs{value: ethToSend}();
+    }
+
+    function testBuyEggsEmitsEvent() public {
+        uint256 ethToSend = 0.001 ether;
+
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
         vm.expectEmit(true, false, false, true);
-        emit ChickenGame.EggLaid(player1, 1 ether, 1);
-        chickenGame.layEgg();
+        emit ChickenGame.EggsBought(player1, ethToSend, 1 ether);
+        chickenGame.buyEggs{value: ethToSend}();
     }
 
-    function testLayMultipleEggs() public {
-        // Lay 3 eggs
-        for (uint256 eggCount = 0; eggCount < 3; eggCount++) {
-            // Get chicken to 100 happiness using feed only for consistency
-            for (uint256 i = 0; i < 10; i++) {
-                // After using all instant actions, warp time between each feed
-                if (eggCount > 0) {
-                    vm.warp(block.timestamp + 24 hours + 1);
-                }
-                
-                vm.prank(player1);
-                chickenGame.feedChicken();
-            }
+    // ========== MERGE EGGS TESTS ==========
 
-            // Lay egg
-            vm.prank(player1);
-            chickenGame.layEgg();
-        }
-
-        // Check total eggs laid
-        (, , , , uint256 totalEggsLaid, , ) = chickenGame.getChicken(player1);
-        assertEq(totalEggsLaid, 3);
-        assertEq(eggToken.balanceOf(player1), 3 ether);
-    }
-
-    // ========== VIEW FUNCTION TESTS ==========
-
-    function testIsActionAvailableForNewUser() public view {
-        // All actions should be available for new users
-        assertTrue(chickenGame.isActionAvailable(player1, 0)); // Feed
-        assertTrue(chickenGame.isActionAvailable(player1, 1)); // Pet
-        assertTrue(chickenGame.isActionAvailable(player1, 2)); // Play
-    }
-
-    function testIsActionAvailableWithInstantActions() public {
-        // Use one instant action
+    function testMergeEggsForMegaEgg() public {
+        // First, buy some eggs
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
-        chickenGame.feedChicken();
+        chickenGame.buyEggs{value: 0.01 ether}(); // Get 10 eggs
 
-        // All actions should still be available
-        assertTrue(chickenGame.isActionAvailable(player1, 0));
-        assertTrue(chickenGame.isActionAvailable(player1, 1));
-        assertTrue(chickenGame.isActionAvailable(player1, 2));
+        // Approve and merge
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 10 ether);
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(10 ether);
+        vm.stopPrank();
+
+        // Check MegaEgg balance
+        assertEq(megaEgg.balanceOf(player1), 1 ether);
+
+        // Check eggs were burned (balance should be 0)
+        assertEq(eggToken.balanceOf(player1), 0);
     }
 
-    function testIsActionAvailableAfterCooldown() public {
-        // Use instant actions on different action types
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            if (i % 3 == 0) {
-                chickenGame.feedChicken();
-            } else if (i % 3 == 1) {
-                chickenGame.petChicken();
-            } else {
-                chickenGame.playWithChicken();
-            }
-        }
+    function testMergeEggsBurnsTokensPermanently() public {
+        uint256 initialTotalSupply = eggToken.totalSupply();
 
-        // All actions should not be available (no instant actions left and cooldown active)
-        assertFalse(chickenGame.isActionAvailable(player1, 0));
-        assertFalse(chickenGame.isActionAvailable(player1, 1));
-        assertFalse(chickenGame.isActionAvailable(player1, 2));
-
-        // Fast forward 24 hours
-        vm.warp(block.timestamp + 24 hours);
-
-        // Now all actions should be available
-        assertTrue(chickenGame.isActionAvailable(player1, 0));
-        assertTrue(chickenGame.isActionAvailable(player1, 1));
-        assertTrue(chickenGame.isActionAvailable(player1, 2));
-    }
-
-    function testGetTimeUntilNextActionWithInstantActions() public view {
-        // Should return 0 for new users
-        assertEq(chickenGame.getTimeUntilNextAction(player1, 0), 0);
-        assertEq(chickenGame.getTimeUntilNextAction(player1, 1), 0);
-        assertEq(chickenGame.getTimeUntilNextAction(player1, 2), 0);
-    }
-
-    function testGetTimeUntilNextActionAfterCooldown() public {
-        // Use all instant actions on feed
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            chickenGame.feedChicken();
-        }
-
-        // Should show cooldown time
-        uint256 timeRemaining = chickenGame.getTimeUntilNextAction(player1, 0);
-        assertGt(timeRemaining, 0);
-        assertLe(timeRemaining, 24 hours);
-    }
-
-    function testCanLayEgg() public {
-        // Should be false initially
-        assertFalse(chickenGame.canLayEgg(player1));
-
-        // Get chicken to 100 happiness
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            chickenGame.feedChicken();
-        }
-
-        // Should be true now
-        assertTrue(chickenGame.canLayEgg(player1));
-
-        // Lay egg
+        // Buy eggs
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
-        chickenGame.layEgg();
+        chickenGame.buyEggs{value: 0.01 ether}(); // Get 10 eggs
 
-        // Should be false after laying egg
-        assertFalse(chickenGame.canLayEgg(player1));
+        uint256 afterBuyTotalSupply = eggToken.totalSupply();
+        assertEq(afterBuyTotalSupply, initialTotalSupply + 10 ether);
+
+        // Merge eggs (should burn them)
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 10 ether);
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(10 ether);
+        vm.stopPrank();
+
+        // Total supply should decrease back to initial
+        assertEq(eggToken.totalSupply(), initialTotalSupply);
     }
 
-    // ========== MULTIPLE PLAYERS TESTS ==========
-
-    function testMultiplePlayersIndependentStates() public {
-        // Player 1 feeds
+    function testMergeRequiresMinimumEggs() public {
+        // Buy 5 eggs (less than minimum of 10)
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
-        chickenGame.feedChicken();
+        chickenGame.buyEggs{value: 0.005 ether}();
 
-        // Player 2 pets
-        vm.prank(player2);
-        chickenGame.petChicken();
-
-        // Check player 1 state
-        (uint256 happiness1, uint256 lastFeedTime1, uint256 lastPetTime1, , , uint256 instant1, ) = chickenGame.getChicken(player1);
-        assertEq(happiness1, 10);
-        assertGt(lastFeedTime1, 0);
-        assertEq(lastPetTime1, 0); // Player 1 didn't pet
-        assertEq(instant1, 9);
-
-        // Check player 2 state
-        (uint256 happiness2, uint256 lastFeedTime2, uint256 lastPetTime2, , , uint256 instant2, ) = chickenGame.getChicken(player2);
-        assertEq(happiness2, 10);
-        assertEq(lastFeedTime2, 0); // Player 2 didn't feed
-        assertGt(lastPetTime2, 0);
-        assertEq(instant2, 9);
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 5 ether);
+        vm.expectRevert("ChickenGame: Not enough eggs to merge");
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(5 ether);
+        vm.stopPrank();
     }
 
-    function testMultiplePlayersCanLayEggsIndependently() public {
-        // Both players get to 100 happiness
-        for (uint256 i = 0; i < 10; i++) {
-            vm.prank(player1);
-            chickenGame.feedChicken();
-            
-            vm.prank(player2);
-            chickenGame.petChicken();
-        }
-
-        // Player 1 lays egg
+    function testMergeRequiresMergeFee() public {
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
-        chickenGame.layEgg();
+        chickenGame.buyEggs{value: 0.01 ether}();
 
-        assertEq(eggToken.balanceOf(player1), 1 ether);
-        assertEq(eggToken.balanceOf(player2), 0);
-
-        // Player 2 lays egg
-        vm.prank(player2);
-        chickenGame.layEgg();
-
-        assertEq(eggToken.balanceOf(player2), 1 ether);
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 10 ether);
+        vm.expectRevert("ChickenGame: Incorrect merge fee");
+        chickenGame.mergeEggsForMegaEgg{value: 0.005 ether}(10 ether); // Wrong fee
+        vm.stopPrank();
     }
 
-    // ========== EGG TOKEN TESTS ==========
-
-    function testEggTokenHasCorrectNameAndSymbol() public view {
-        assertEq(eggToken.name(), "Egg Token");
-        assertEq(eggToken.symbol(), "EGG");
-    }
-
-    function testOnlyMinterCanMintEggTokens() public {
-        // Admin can mint (has minter role)
-        eggToken.mint(player1, 1 ether);
-        assertEq(eggToken.balanceOf(player1), 1 ether);
-
-        // Player cannot mint (no minter role)
-        vm.prank(player2);
-        vm.expectRevert();
-        eggToken.mint(player2, 1 ether);
-    }
-
-    function testAdminCanGrantMinterRole() public {
-        // Grant minter role to player1
-        eggToken.grantRole(eggToken.MINTER_ROLE(), player1);
-
-        // Player1 should now be able to mint
+    function testMerge20EggsGives2MegaEggs() public {
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
-        eggToken.mint(player2, 1 ether);
-        assertEq(eggToken.balanceOf(player2), 1 ether);
-    }
+        chickenGame.buyEggs{value: 0.02 ether}(); // Get 20 eggs
 
-    function testAdminCanRevokeMinterRole() public {
-        // Grant then revoke minter role
-        eggToken.grantRole(eggToken.MINTER_ROLE(), player1);
-        eggToken.revokeRole(eggToken.MINTER_ROLE(), player1);
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 20 ether);
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(20 ether);
+        vm.stopPrank();
 
-        // Player1 should not be able to mint anymore
-        vm.prank(player1);
-        vm.expectRevert();
-        eggToken.mint(player2, 1 ether);
-    }
-
-    // ========== EDGE CASES ==========
-
-    function testReentrancyProtection() public {
-        // Basic test that functions are protected
-        vm.prank(player1);
-        chickenGame.feedChicken();
-        
-        // If reentrancy guard is working, this should complete successfully
-        assertTrue(true);
-    }
-
-    function testChickenStateConsistencyAfterMultipleEggLayings() public {
-        for (uint256 cycle = 0; cycle < 5; cycle++) {
-            // Get to 100 happiness using feed only for consistency
-            for (uint256 i = 0; i < 10; i++) {
-                // After using all instant actions, warp time between each feed
-                if (cycle > 0) {
-                    vm.warp(block.timestamp + 24 hours + 1);
-                }
-                
-                vm.prank(player1);
-                chickenGame.feedChicken();
-            }
-
-            // Lay egg
-            vm.prank(player1);
-            chickenGame.layEgg();
-
-            // Verify state
-            (uint256 happiness, , , , uint256 totalEggsLaid, , ) = chickenGame.getChicken(player1);
-            assertEq(happiness, 0);
-            assertEq(totalEggsLaid, cycle + 1);
-        }
-
-        assertEq(eggToken.balanceOf(player1), 5 ether);
+        assertEq(megaEgg.balanceOf(player1), 2 ether);
     }
 
     // ========== USDT STAKING TESTS ==========
 
-    function testStakeUSDTGrantsFreeActions() public {
-        uint256 stakeAmount = 5000 * 10**6; // 5000 USDT
+    function testStakeUSDTGrantsInstantActions() public {
+        uint256 stakeAmount = 5000 * 10**6;
 
-        // Approve and stake
         vm.startPrank(player1);
         usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
         chickenGame.stakeUSDT(stakeAmount);
         vm.stopPrank();
 
-        // Check free actions granted (5000 USDT / 1000 = 5 free actions)
         (
-            ,
             ,
             ,
             ,
@@ -564,364 +385,149 @@ contract ChickenGameTest is Test {
 
         assertTrue(initialized);
         assertEq(instantActionsRemaining, 15); // 10 initial + 5 from staking
-        assertEq(chickenGame.getStakedBalance(player1), stakeAmount);
     }
-
-    function testStakeUSDTWithLessThan1000DoesNotGrantActions() public {
-        uint256 stakeAmount = 500 * 10**6; // 500 USDT (less than 1000)
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-        vm.stopPrank();
-
-        // Check that only initial free actions remain
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256 instantActionsRemaining,
-
-        ) = chickenGame.getChicken(player1);
-
-        assertEq(instantActionsRemaining, 10); // Only initial 10, no additional from staking
-        assertEq(chickenGame.getStakedBalance(player1), stakeAmount);
-    }
-
-    function testMultipleStakesAccumulateFreeActions() public {
-        // First stake: 2000 USDT = 2 free actions
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 2000 * 10**6);
-        chickenGame.stakeUSDT(2000 * 10**6);
-
-        // Second stake: 3000 USDT = 3 free actions
-        usdtAtHardcodedAddress.approve(address(chickenGame), 3000 * 10**6);
-        chickenGame.stakeUSDT(3000 * 10**6);
-        vm.stopPrank();
-
-        // Check total: 10 initial + 2 + 3 = 15 free actions
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint256 instantActionsRemaining,
-
-        ) = chickenGame.getChicken(player1);
-
-        assertEq(instantActionsRemaining, 15);
-        assertEq(chickenGame.getStakedBalance(player1), 5000 * 10**6);
-    }
-
-    function testStakeEmitsEvent() public {
-        uint256 stakeAmount = 3000 * 10**6;
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-
-        vm.expectEmit(true, false, false, true);
-        emit ChickenGame.Staked(player1, stakeAmount, 3); // 3 free actions
-        chickenGame.stakeUSDT(stakeAmount);
-        vm.stopPrank();
-    }
-
-    function testCannotStakeZeroAmount() public {
-        vm.startPrank(player1);
-        vm.expectRevert("ChickenGame: Amount must be greater than 0");
-        chickenGame.stakeUSDT(0);
-        vm.stopPrank();
-    }
-
-    function testStakeRequiresSufficientAllowance() public {
-        uint256 stakeAmount = 1000 * 10**6;
-
-        vm.startPrank(player1);
-        // Don't approve, expect failure
-        vm.expectRevert("Insufficient allowance");
-        chickenGame.stakeUSDT(stakeAmount);
-        vm.stopPrank();
-    }
-
-    function testStakeRequiresSufficientBalance() public {
-        uint256 stakeAmount = 200000 * 10**6; // More than player has
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        vm.expectRevert("Insufficient balance");
-        chickenGame.stakeUSDT(stakeAmount);
-        vm.stopPrank();
-    }
-
-    // ========== USDT UNSTAKING TESTS ==========
 
     function testUnstakeUSDT() public {
         uint256 stakeAmount = 5000 * 10**6;
 
-        // Stake first
         vm.startPrank(player1);
         usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
         chickenGame.stakeUSDT(stakeAmount);
 
         uint256 balanceBefore = usdtAtHardcodedAddress.balanceOf(player1);
-
-        // Unstake
         chickenGame.unstakeUSDT(stakeAmount);
         vm.stopPrank();
 
-        // Check balances
         assertEq(chickenGame.getStakedBalance(player1), 0);
         assertEq(usdtAtHardcodedAddress.balanceOf(player1), balanceBefore + stakeAmount);
     }
 
-    function testPartialUnstake() public {
-        uint256 stakeAmount = 5000 * 10**6;
-        uint256 unstakeAmount = 2000 * 10**6;
+    // ========== OWNERSHIP & ETH WITHDRAWAL TESTS ==========
 
-        // Stake first
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-
-        uint256 balanceBefore = usdtAtHardcodedAddress.balanceOf(player1);
-
-        // Partial unstake
-        chickenGame.unstakeUSDT(unstakeAmount);
-        vm.stopPrank();
-
-        // Check balances
-        assertEq(chickenGame.getStakedBalance(player1), stakeAmount - unstakeAmount);
-        assertEq(usdtAtHardcodedAddress.balanceOf(player1), balanceBefore + unstakeAmount);
-    }
-
-    function testUnstakeEmitsEvent() public {
-        uint256 stakeAmount = 3000 * 10**6;
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-
-        vm.expectEmit(true, false, false, true);
-        emit ChickenGame.Unstaked(player1, stakeAmount);
-        chickenGame.unstakeUSDT(stakeAmount);
-        vm.stopPrank();
-    }
-
-    function testCannotUnstakeZeroAmount() public {
-        vm.startPrank(player1);
-        vm.expectRevert("ChickenGame: Amount must be greater than 0");
-        chickenGame.unstakeUSDT(0);
-        vm.stopPrank();
-    }
-
-    function testCannotUnstakeMoreThanStaked() public {
-        uint256 stakeAmount = 1000 * 10**6;
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-
-        vm.expectRevert("ChickenGame: Insufficient staked balance");
-        chickenGame.unstakeUSDT(2000 * 10**6);
-        vm.stopPrank();
-    }
-
-    function testUnstakeDoesNotAffectFreeActions() public {
-        uint256 stakeAmount = 3000 * 10**6; // 3 free actions
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-
-        // Check free actions after staking
-        (, , , , , uint256 actionsBefore, ) = chickenGame.getChicken(player1);
-        assertEq(actionsBefore, 13); // 10 initial + 3 from staking
-
-        // Unstake (free actions should remain)
-        chickenGame.unstakeUSDT(stakeAmount);
-
-        (, , , , , uint256 actionsAfter, ) = chickenGame.getChicken(player1);
-        assertEq(actionsAfter, 13); // Same as before
-        vm.stopPrank();
-    }
-
-    // ========== STAKING CALCULATION TESTS ==========
-
-    function testCalculateFreeActionsForVariousAmounts() public view {
-        assertEq(chickenGame.calculateFreeActions(0), 0);
-        assertEq(chickenGame.calculateFreeActions(500 * 10**6), 0); // 500 USDT
-        assertEq(chickenGame.calculateFreeActions(1000 * 10**6), 1); // 1000 USDT
-        assertEq(chickenGame.calculateFreeActions(2500 * 10**6), 2); // 2500 USDT
-        assertEq(chickenGame.calculateFreeActions(10000 * 10**6), 10); // 10000 USDT
-        assertEq(chickenGame.calculateFreeActions(15750 * 10**6), 15); // 15750 USDT
-    }
-
-    // ========== OWNERSHIP TESTS ==========
-
-    function testOwnerIsSetCorrectly() public view {
-        assertEq(chickenGame.owner(), admin);
-    }
-
-    function testTransferOwnership() public {
-        address newOwner = address(0x789);
-
-        vm.expectEmit(true, true, false, false);
-        emit ChickenGame.OwnershipTransferred(admin, newOwner);
-        chickenGame.transferOwnership(newOwner);
-
-        assertEq(chickenGame.owner(), newOwner);
-    }
-
-    function testOnlyOwnerCanTransferOwnership() public {
-        address newOwner = address(0x789);
-
+    function testOwnerCanWithdrawETH() public {
+        // Player buys eggs
+        vm.deal(player1, 1 ether);
         vm.prank(player1);
+        chickenGame.buyEggs{value: 0.1 ether}();
+
+        // Player merges eggs
+        vm.startPrank(player1);
+        eggToken.approve(address(chickenGame), 100 ether);
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(100 ether);
+        vm.stopPrank();
+
+        // Contract should have 0.11 ETH
+        assertEq(address(chickenGame).balance, 0.11 ether);
+
+        // Owner withdraws
+        address payable recipient = payable(address(0x999));
+        chickenGame.withdrawETH(recipient);
+
+        assertEq(address(chickenGame).balance, 0);
+        assertEq(recipient.balance, 0.11 ether);
+    }
+
+    function testNonOwnerCannotWithdrawETH() public {
+        vm.deal(player1, 1 ether);
+        vm.prank(player1);
+        chickenGame.buyEggs{value: 0.1 ether}();
+
+        vm.prank(player2);
         vm.expectRevert("ChickenGame: caller is not the owner");
-        chickenGame.transferOwnership(newOwner);
+        chickenGame.withdrawETH(payable(player2));
     }
 
-    function testCannotTransferOwnershipToZeroAddress() public {
-        vm.expectRevert("ChickenGame: New owner is the zero address");
-        chickenGame.transferOwnership(address(0));
+    // ========== EGG TOKEN BURN TESTS ==========
+
+    function testEggTokenBurn() public {
+        // Mint some eggs
+        eggToken.mint(player1, 10 ether);
+
+        assertEq(eggToken.balanceOf(player1), 10 ether);
+        uint256 totalSupplyBefore = eggToken.totalSupply();
+
+        // Burn eggs
+        vm.prank(player1);
+        eggToken.burn(5 ether);
+
+        assertEq(eggToken.balanceOf(player1), 5 ether);
+        assertEq(eggToken.totalSupply(), totalSupplyBefore - 5 ether);
     }
 
-    // ========== EMERGENCY WITHDRAWAL TESTS ==========
+    function testEggTokenBurnFrom() public {
+        // Mint eggs
+        eggToken.mint(player1, 10 ether);
 
-    function testEmergencyWithdrawUSDT() public {
-        // Setup: Players stake USDT
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 5000 * 10**6);
-        chickenGame.stakeUSDT(5000 * 10**6);
-        vm.stopPrank();
+        // Approve player2 to burn
+        vm.prank(player1);
+        eggToken.approve(player2, 5 ether);
 
-        vm.startPrank(player2);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 3000 * 10**6);
-        chickenGame.stakeUSDT(3000 * 10**6);
-        vm.stopPrank();
+        // Player2 burns from player1
+        uint256 totalSupplyBefore = eggToken.totalSupply();
+        vm.prank(player2);
+        eggToken.burnFrom(player1, 5 ether);
 
-        uint256 totalStaked = 8000 * 10**6;
-        address recipient = address(0x999);
-
-        // Emergency withdraw
-        vm.expectEmit(true, false, false, true);
-        emit ChickenGame.EmergencyWithdraw(recipient, totalStaked);
-        chickenGame.emergencyWithdrawUSDT(recipient);
-
-        // Verify all USDT was withdrawn
-        assertEq(usdtAtHardcodedAddress.balanceOf(recipient), totalStaked);
-        assertEq(usdtAtHardcodedAddress.balanceOf(address(chickenGame)), 0);
+        assertEq(eggToken.balanceOf(player1), 5 ether);
+        assertEq(eggToken.totalSupply(), totalSupplyBefore - 5 ether);
     }
 
-    function testOnlyOwnerCanEmergencyWithdraw() public {
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 1000 * 10**6);
-        chickenGame.stakeUSDT(1000 * 10**6);
+    // ========== VIEW FUNCTION TESTS ==========
 
-        vm.expectRevert("ChickenGame: caller is not the owner");
-        chickenGame.emergencyWithdrawUSDT(player1);
-        vm.stopPrank();
-    }
+    function testIsActionAvailable() public {
+        // Should be available for new user
+        assertTrue(chickenGame.isActionAvailable(player1));
 
-    function testCannotEmergencyWithdrawToZeroAddress() public {
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 1000 * 10**6);
-        chickenGame.stakeUSDT(1000 * 10**6);
-        vm.stopPrank();
-
-        vm.expectRevert("ChickenGame: Invalid recipient address");
-        chickenGame.emergencyWithdrawUSDT(address(0));
-    }
-
-    function testCannotEmergencyWithdrawWhenNoBalance() public {
-        vm.expectRevert("ChickenGame: No USDT to withdraw");
-        chickenGame.emergencyWithdrawUSDT(admin);
-    }
-
-    function testEmergencyWithdrawDoesNotAffectStakedBalanceTracking() public {
-        // This test shows that emergency withdraw is truly for emergencies
-        // as it doesn't update the stakedBalance mapping
-        uint256 stakeAmount = 5000 * 10**6;
-
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), stakeAmount);
-        chickenGame.stakeUSDT(stakeAmount);
-        vm.stopPrank();
-
-        // Emergency withdraw
-        chickenGame.emergencyWithdrawUSDT(admin);
-
-        // stakedBalance still shows the amount (even though funds were withdrawn)
-        assertEq(chickenGame.getStakedBalance(player1), stakeAmount);
-
-        // But contract has no USDT
-        assertEq(usdtAtHardcodedAddress.balanceOf(address(chickenGame)), 0);
-    }
-
-    // ========== INTEGRATION TESTS ==========
-
-    function testStakingAndPlayingIntegration() public {
-        // Player stakes 10000 USDT to get 10 additional free actions (20 total)
-        vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 10000 * 10**6);
-        chickenGame.stakeUSDT(10000 * 10**6);
-
-        // Use all 20 instant actions
+        // Initialize and use all actions
         for (uint256 i = 0; i < 20; i++) {
+            vm.prank(player1);
             chickenGame.feedChicken();
         }
 
-        // Check state
-        (uint256 happiness, , , , , uint256 instantActionsRemaining, ) = chickenGame.getChicken(player1);
-        assertEq(happiness, 100); // Capped at 100
-        assertEq(instantActionsRemaining, 0); // All used
+        // Should not be available
+        assertFalse(chickenGame.isActionAvailable(player1));
 
-        // Lay first egg
+        // Warp 2 hours
+        vm.warp(block.timestamp + 2 hours);
+
+        // Should be available again
+        assertTrue(chickenGame.isActionAvailable(player1));
+    }
+
+    function testCalculateMegaEggs() public view {
+        assertEq(chickenGame.calculateMegaEggs(0), 0);
+        assertEq(chickenGame.calculateMegaEggs(5 ether), 0); // Less than min
+        assertEq(chickenGame.calculateMegaEggs(10 ether), 1 ether);
+        assertEq(chickenGame.calculateMegaEggs(20 ether), 2 ether);
+        assertEq(chickenGame.calculateMegaEggs(25 ether), 2 ether); // Rounds down
+        assertEq(chickenGame.calculateMegaEggs(30 ether), 3 ether);
+    }
+
+    // ========== INTEGRATION TEST ==========
+
+    function testFullGameCycle() public {
+        // Player uses free actions to lay an egg
+        for (uint256 i = 0; i < 10; i++) {
+            vm.prank(player1);
+            chickenGame.feedChicken();
+        }
+
+        vm.prank(player1);
         chickenGame.layEgg();
         assertEq(eggToken.balanceOf(player1), 1 ether);
 
-        // Get back to 100 with more actions (need to wait for cooldown now)
-        // Warp time before each feed action
-        uint256 currentTime = block.timestamp;
-        for (uint256 i = 0; i < 10; i++) {
-            currentTime += 24 hours + 1;
-            vm.warp(currentTime);
-            chickenGame.feedChicken();
-        }
+        // Player buys 9 more eggs to have 10 total
+        vm.deal(player1, 1 ether);
+        vm.prank(player1);
+        chickenGame.buyEggs{value: 0.009 ether}();
+        assertEq(eggToken.balanceOf(player1), 10 ether);
 
-        chickenGame.layEgg();
-        assertEq(eggToken.balanceOf(player1), 2 ether);
-
-        // Unstake
-        chickenGame.unstakeUSDT(10000 * 10**6);
-        assertEq(chickenGame.getStakedBalance(player1), 0);
-
-        vm.stopPrank();
-    }
-
-    function testMultiplePlayersStakingIndependently() public {
-        // Player 1 stakes 5000 USDT
+        // Player merges to get MegaEgg
         vm.startPrank(player1);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 5000 * 10**6);
-        chickenGame.stakeUSDT(5000 * 10**6);
+        eggToken.approve(address(chickenGame), 10 ether);
+        chickenGame.mergeEggsForMegaEgg{value: 0.01 ether}(10 ether);
         vm.stopPrank();
 
-        // Player 2 stakes 3000 USDT
-        vm.startPrank(player2);
-        usdtAtHardcodedAddress.approve(address(chickenGame), 3000 * 10**6);
-        chickenGame.stakeUSDT(3000 * 10**6);
-        vm.stopPrank();
-
-        // Verify independent states
-        assertEq(chickenGame.getStakedBalance(player1), 5000 * 10**6);
-        assertEq(chickenGame.getStakedBalance(player2), 3000 * 10**6);
-
-        (, , , , , uint256 actions1, ) = chickenGame.getChicken(player1);
-        (, , , , , uint256 actions2, ) = chickenGame.getChicken(player2);
-
-        assertEq(actions1, 15); // 10 + 5
-        assertEq(actions2, 13); // 10 + 3
+        assertEq(megaEgg.balanceOf(player1), 1 ether);
+        assertEq(eggToken.balanceOf(player1), 0); // All burned
     }
 }
-

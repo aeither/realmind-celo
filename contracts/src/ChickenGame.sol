@@ -29,6 +29,24 @@ contract EggToken is ERC20, AccessControl {
     }
 
     /**
+     * @dev Burn tokens from caller's account
+     * @param amount Amount of tokens to burn
+     */
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
+
+    /**
+     * @dev Burn tokens from a specific account (requires approval)
+     * @param from Address to burn tokens from
+     * @param amount Amount of tokens to burn
+     */
+    function burnFrom(address from, uint256 amount) public {
+        _spendAllowance(from, msg.sender, amount);
+        _burn(from, amount);
+    }
+
+    /**
      * @dev Admin can grant minter role to any address (including smart contracts)
      * Example: grantRole(MINTER_ROLE, chickenGameAddress);
      */
@@ -92,8 +110,8 @@ contract RetentionSystem {
 
     // ============ Constants ============
 
-    /// @notice 1 day in seconds (86400)
-    uint256 public constant ONE_DAY = 1 days;
+    /// @notice Check-in period (20 hours to avoid daily delay)
+    uint256 public constant ONE_DAY = 20 hours;
 
     /// @notice Base eggs per check-in
     uint256 public constant BASE_EGGS = 1 ether;
@@ -340,8 +358,11 @@ contract ChickenGame is ReentrancyGuard {
     // USDT token address on Celo
     address public constant USDT_ADDRESS = 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e;
 
-    // Cooldown period between actions (24 hours)
-    uint256 public constant ACTION_COOLDOWN = 24 hours;
+    // Action accumulation rate (Farmville-style): 1 action every 2 hours
+    uint256 public constant ACTION_ACCUMULATION_TIME = 2 hours;
+
+    // Maximum claimable actions that can be stored
+    uint256 public constant MAX_CLAIMABLE_ACTIONS = 10;
 
     // Happiness points per action
     uint256 public constant HAPPINESS_PER_ACTION = 10;
@@ -372,22 +393,15 @@ contract ChickenGame is ReentrancyGuard {
 
     struct Chicken {
         uint256 happiness;
-        uint256 lastFeedTime;
-        uint256 lastPetTime;
-        uint256 lastPlayTime;
+        uint256 claimableActions; // Actions accumulated over time (max 10)
+        uint256 lastActionUpdate; // Last time actions were updated
         uint256 totalEggsLaid;
-        uint256 instantActionsRemaining; // Free actions without cooldown
+        uint256 instantActionsRemaining; // Free actions from onboarding/staking
         bool initialized; // Track if chicken has been initialized
     }
 
     mapping(address => Chicken) public chickens;
     mapping(address => uint256) public stakedBalance;
-
-    // Leaderboard tracking for F2P users (free laid eggs only)
-    mapping(address => uint256) public f2pScore; // Total eggs laid via happiness
-
-    // Leaderboard tracking for paid users (MegaEggs)
-    mapping(address => uint256) public paidScore; // Total MegaEggs earned via merging
 
     event ActionPerformed(address indexed user, string actionType, uint256 newHappiness);
     event EggLaid(address indexed user, uint256 amount, uint256 totalEggs);
@@ -424,72 +438,88 @@ contract ChickenGame is ReentrancyGuard {
         if (!chicken.initialized) {
             chicken.initialized = true;
             chicken.instantActionsRemaining = FREE_INSTANT_ACTIONS;
+            chicken.claimableActions = MAX_CLAIMABLE_ACTIONS; // Start with full actions
+            chicken.lastActionUpdate = block.timestamp;
+        }
+    }
+
+    /**
+     * @dev Calculate and update accumulated claimable actions
+     * @param user Address of the chicken owner
+     */
+    function _updateClaimableActions(address user) internal {
+        Chicken storage chicken = chickens[user];
+
+        if (chicken.lastActionUpdate == 0) {
+            return; // Not initialized yet
+        }
+
+        uint256 timePassed = block.timestamp - chicken.lastActionUpdate;
+        uint256 accumulatedActions = timePassed / ACTION_ACCUMULATION_TIME;
+
+        if (accumulatedActions > 0) {
+            chicken.claimableActions += accumulatedActions;
+
+            // Cap at maximum
+            if (chicken.claimableActions > MAX_CLAIMABLE_ACTIONS) {
+                chicken.claimableActions = MAX_CLAIMABLE_ACTIONS;
+            }
+
+            // Update timestamp (only count fully accumulated actions)
+            chicken.lastActionUpdate += accumulatedActions * ACTION_ACCUMULATION_TIME;
+        }
+    }
+
+    /**
+     * @dev Use one action (either instant or claimable)
+     * @param user Address of the chicken owner
+     */
+    function _useAction(address user) internal {
+        Chicken storage chicken = chickens[user];
+
+        // First, try to use instant actions
+        if (chicken.instantActionsRemaining > 0) {
+            chicken.instantActionsRemaining--;
+        } else {
+            // Update accumulated actions before checking
+            _updateClaimableActions(user);
+
+            require(
+                chicken.claimableActions > 0,
+                "ChickenGame: No actions available"
+            );
+
+            chicken.claimableActions--;
         }
     }
 
     /**
      * @dev Feed the chicken to increase happiness by 10 points
-     * Can only be performed once per 24 hours (or uses instant action if available)
+     * Uses claimable actions (accumulated at 1 per 2 hours, max 10)
      */
     function feedChicken() external nonReentrant {
         _initializeChicken(msg.sender);
-        Chicken storage chicken = chickens[msg.sender];
-        
-        // Check if user has instant actions or if cooldown has expired
-        if (chicken.instantActionsRemaining > 0) {
-            chicken.instantActionsRemaining--;
-        } else {
-            require(
-                block.timestamp >= chicken.lastFeedTime + ACTION_COOLDOWN,
-                "ChickenGame: Feed cooldown not expired"
-            );
-        }
-        
-        chicken.lastFeedTime = block.timestamp;
+        _useAction(msg.sender);
         _increaseHappiness(msg.sender, "Feed");
     }
 
     /**
      * @dev Pet the chicken to increase happiness by 10 points
-     * Can only be performed once per 24 hours (or uses instant action if available)
+     * Uses claimable actions (accumulated at 1 per 2 hours, max 10)
      */
     function petChicken() external nonReentrant {
         _initializeChicken(msg.sender);
-        Chicken storage chicken = chickens[msg.sender];
-        
-        // Check if user has instant actions or if cooldown has expired
-        if (chicken.instantActionsRemaining > 0) {
-            chicken.instantActionsRemaining--;
-        } else {
-            require(
-                block.timestamp >= chicken.lastPetTime + ACTION_COOLDOWN,
-                "ChickenGame: Pet cooldown not expired"
-            );
-        }
-        
-        chicken.lastPetTime = block.timestamp;
+        _useAction(msg.sender);
         _increaseHappiness(msg.sender, "Pet");
     }
 
     /**
      * @dev Play with the chicken to increase happiness by 10 points
-     * Can only be performed once per 24 hours (or uses instant action if available)
+     * Uses claimable actions (accumulated at 1 per 2 hours, max 10)
      */
     function playWithChicken() external nonReentrant {
         _initializeChicken(msg.sender);
-        Chicken storage chicken = chickens[msg.sender];
-        
-        // Check if user has instant actions or if cooldown has expired
-        if (chicken.instantActionsRemaining > 0) {
-            chicken.instantActionsRemaining--;
-        } else {
-            require(
-                block.timestamp >= chicken.lastPlayTime + ACTION_COOLDOWN,
-                "ChickenGame: Play cooldown not expired"
-            );
-        }
-        
-        chicken.lastPlayTime = block.timestamp;
+        _useAction(msg.sender);
         _increaseHappiness(msg.sender, "Play");
     }
 
@@ -513,7 +543,6 @@ contract ChickenGame is ReentrancyGuard {
     /**
      * @dev Lay an egg when chicken happiness reaches 100
      * Mints 1 EGG token to the user and resets happiness to 0
-     * Increments F2P leaderboard score
      */
     function layEgg() external nonReentrant {
         Chicken storage chicken = chickens[msg.sender];
@@ -525,9 +554,6 @@ contract ChickenGame is ReentrancyGuard {
         // Reset happiness to 0
         chicken.happiness = 0;
         chicken.totalEggsLaid += 1;
-
-        // Increment F2P score (free-to-play leaderboard)
-        f2pScore[msg.sender] += 1;
 
         // Mint egg token to user
         eggToken.mint(msg.sender, EGG_REWARD);
@@ -556,24 +582,21 @@ contract ChickenGame is ReentrancyGuard {
 
     /**
      * @dev Merge eggs to create MegaEggs
-     * Burns eggs and mints MegaEggs, increments paid leaderboard score
+     * Burns eggs and mints MegaEggs
      * @param eggsToMerge Amount of eggs to merge (must be >= MIN_EGGS_TO_MERGE)
      */
     function mergeEggsForMegaEgg(uint256 eggsToMerge) external payable nonReentrant {
         require(eggsToMerge >= MIN_EGGS_TO_MERGE, "ChickenGame: Not enough eggs to merge");
         require(msg.value == MERGE_FEE, "ChickenGame: Incorrect merge fee");
 
-        // Burn eggs from user
-        eggToken.transferFrom(msg.sender, address(this), eggsToMerge);
+        // Burn eggs from user (permanently destroy them)
+        eggToken.burnFrom(msg.sender, eggsToMerge);
 
         // Calculate MegaEggs to mint (1 MegaEgg per MIN_EGGS_TO_MERGE)
         uint256 megaEggsToMint = (eggsToMerge / MIN_EGGS_TO_MERGE) * MEGAEGG_REWARD;
 
         // Mint MegaEggs to user
         megaEgg.mint(msg.sender, megaEggsToMint);
-
-        // Increment paid leaderboard score
-        paidScore[msg.sender] += megaEggsToMint / 1 ether;
 
         emit EggsMerged(msg.sender, eggsToMerge, megaEggsToMint);
     }
@@ -667,28 +690,37 @@ contract ChickenGame is ReentrancyGuard {
      * @dev Get chicken data for a specific user
      * @param user Address of the chicken owner
      * @return happiness Current happiness level
-     * @return lastFeedTime Timestamp of last feed
-     * @return lastPetTime Timestamp of last pet
-     * @return lastPlayTime Timestamp of last play
+     * @return claimableActions Current claimable actions (updated)
+     * @return lastActionUpdate Timestamp of last action update
      * @return totalEggsLaid Total number of eggs laid
      * @return instantActionsRemaining Number of instant actions remaining
      * @return initialized Whether the chicken has been initialized
      */
     function getChicken(address user) external view returns (
         uint256 happiness,
-        uint256 lastFeedTime,
-        uint256 lastPetTime,
-        uint256 lastPlayTime,
+        uint256 claimableActions,
+        uint256 lastActionUpdate,
         uint256 totalEggsLaid,
         uint256 instantActionsRemaining,
         bool initialized
     ) {
         Chicken memory chicken = chickens[user];
+
+        // Calculate current claimable actions
+        uint256 currentClaimable = chicken.claimableActions;
+        if (chicken.lastActionUpdate > 0) {
+            uint256 timePassed = block.timestamp - chicken.lastActionUpdate;
+            uint256 accumulated = timePassed / ACTION_ACCUMULATION_TIME;
+            currentClaimable += accumulated;
+            if (currentClaimable > MAX_CLAIMABLE_ACTIONS) {
+                currentClaimable = MAX_CLAIMABLE_ACTIONS;
+            }
+        }
+
         return (
             chicken.happiness,
-            chicken.lastFeedTime,
-            chicken.lastPetTime,
-            chicken.lastPlayTime,
+            currentClaimable,
+            chicken.lastActionUpdate,
             chicken.totalEggsLaid,
             chicken.instantActionsRemaining,
             chicken.initialized
@@ -696,64 +728,63 @@ contract ChickenGame is ReentrancyGuard {
     }
 
     /**
-     * @dev Check if an action is available (cooldown expired or instant actions available)
+     * @dev Check if an action is available
      * @param user Address of the chicken owner
-     * @param actionType Type of action: 0=Feed, 1=Pet, 2=Play
-     * @return bool True if action is available
+     * @return bool True if action is available (has instant actions or claimable actions)
      */
-    function isActionAvailable(address user, uint256 actionType) external view returns (bool) {
+    function isActionAvailable(address user) external view returns (bool) {
         Chicken memory chicken = chickens[user];
-        
-        // If user has instant actions remaining (or not initialized yet), action is always available
-        if (!chicken.initialized || chicken.instantActionsRemaining > 0) {
+
+        // Not initialized yet - will be available after initialization
+        if (!chicken.initialized) {
             return true;
         }
-        
-        // Otherwise check cooldown
-        if (actionType == 0) {
-            return block.timestamp >= chicken.lastFeedTime + ACTION_COOLDOWN;
-        } else if (actionType == 1) {
-            return block.timestamp >= chicken.lastPetTime + ACTION_COOLDOWN;
-        } else if (actionType == 2) {
-            return block.timestamp >= chicken.lastPlayTime + ACTION_COOLDOWN;
+
+        // Has instant actions
+        if (chicken.instantActionsRemaining > 0) {
+            return true;
         }
-        
-        return false;
+
+        // Check accumulated claimable actions
+        uint256 currentClaimable = chicken.claimableActions;
+        if (chicken.lastActionUpdate > 0) {
+            uint256 timePassed = block.timestamp - chicken.lastActionUpdate;
+            uint256 accumulated = timePassed / ACTION_ACCUMULATION_TIME;
+            currentClaimable += accumulated;
+        }
+
+        return currentClaimable > 0;
     }
 
     /**
-     * @dev Get time remaining until next action is available
+     * @dev Get time remaining until next action accumulates
      * @param user Address of the chicken owner
-     * @param actionType Type of action: 0=Feed, 1=Pet, 2=Play
-     * @return uint256 Seconds remaining until action is available (0 if available now or has instant actions)
+     * @return uint256 Seconds until next action accumulates (0 if at max or has instant actions)
      */
-    function getTimeUntilNextAction(address user, uint256 actionType) external view returns (uint256) {
+    function getTimeUntilNextAction(address user) external view returns (uint256) {
         Chicken memory chicken = chickens[user];
-        
-        // If user has instant actions or is not initialized, action is immediately available
+
+        // Not initialized or has instant actions - immediately available
         if (!chicken.initialized || chicken.instantActionsRemaining > 0) {
             return 0;
         }
-        
-        uint256 lastActionTime;
-        
-        if (actionType == 0) {
-            lastActionTime = chicken.lastFeedTime;
-        } else if (actionType == 1) {
-            lastActionTime = chicken.lastPetTime;
-        } else if (actionType == 2) {
-            lastActionTime = chicken.lastPlayTime;
-        } else {
+
+        // Calculate current claimable actions
+        uint256 currentClaimable = chicken.claimableActions;
+        if (chicken.lastActionUpdate > 0) {
+            uint256 timePassed = block.timestamp - chicken.lastActionUpdate;
+            uint256 accumulated = timePassed / ACTION_ACCUMULATION_TIME;
+            currentClaimable += accumulated;
+        }
+
+        // If at max, no more will accumulate
+        if (currentClaimable >= MAX_CLAIMABLE_ACTIONS) {
             return 0;
         }
-        
-        uint256 nextActionTime = lastActionTime + ACTION_COOLDOWN;
-        
-        if (block.timestamp >= nextActionTime) {
-            return 0;
-        }
-        
-        return nextActionTime - block.timestamp;
+
+        // Time until next accumulation
+        uint256 timeSinceLastAccumulation = (block.timestamp - chicken.lastActionUpdate) % ACTION_ACCUMULATION_TIME;
+        return ACTION_ACCUMULATION_TIME - timeSinceLastAccumulation;
     }
 
     /**
@@ -781,24 +812,6 @@ contract ChickenGame is ReentrancyGuard {
      */
     function calculateFreeActions(uint256 amount) external pure returns (uint256) {
         return amount / USDT_PER_ACTION;
-    }
-
-    /**
-     * @dev Get F2P leaderboard score for a user
-     * @param user Address of the user
-     * @return uint256 F2P score (total eggs laid via happiness)
-     */
-    function getF2PScore(address user) external view returns (uint256) {
-        return f2pScore[user];
-    }
-
-    /**
-     * @dev Get paid leaderboard score for a user
-     * @param user Address of the user
-     * @return uint256 Paid score (total MegaEggs earned)
-     */
-    function getPaidScore(address user) external view returns (uint256) {
-        return paidScore[user];
     }
 
     /**
