@@ -8,8 +8,10 @@ import { chickenGameABI } from '../libs/chickenGameABI'
 import { SUPPORTED_CHAIN } from '../libs/supportedChains'
 import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral'
 
-const CHICKEN_GAME_ADDRESS = '0x7147fC4382a87D772E8667A2f9322ce471A1912E' as `0x${string}`;
-const EGG_TOKEN_ADDRESS = '0x252Cf4eF66DB38ac1C53f05ccF5dc0f90331151A' as `0x${string}`;
+const CHICKEN_GAME_ADDRESS = '0x718dA7d4060Bc4eB1dBd7cCed04c9C1390c60500' as `0x${string}`;
+const EGG_TOKEN_ADDRESS = '0x9FBA2481F9061b11d084d3acf276961D251cF5a5' as `0x${string}`;
+const MEGA_EGG_ADDRESS = '0x885171d283aa8541B0EBE0497042d001D0ffA10f' as `0x${string}`;
+const RETENTION_SYSTEM_ADDRESS = '0x3e0f389040A70c526022ecd41ff4d25934048Cd9' as `0x${string}`;
 
 function ChickenPage() {
   const { address, isConnected, chain } = useAccount()
@@ -40,33 +42,11 @@ function ChickenPage() {
     },
   });
 
-  const { data: feedAvailable } = useReadContract({
+  const { data: isActionAvailable } = useReadContract({
     address: CHICKEN_GAME_ADDRESS,
     abi: chickenGameABI,
     functionName: 'isActionAvailable',
-    args: address ? [address, 0n] : undefined,
-    query: {
-      enabled: !!address,
-      refetchInterval: 5000,
-    },
-  });
-
-  const { data: petAvailable } = useReadContract({
-    address: CHICKEN_GAME_ADDRESS,
-    abi: chickenGameABI,
-    functionName: 'isActionAvailable',
-    args: address ? [address, 1n] : undefined,
-    query: {
-      enabled: !!address,
-      refetchInterval: 5000,
-    },
-  });
-
-  const { data: playAvailable } = useReadContract({
-    address: CHICKEN_GAME_ADDRESS,
-    abi: chickenGameABI,
-    functionName: 'isActionAvailable',
-    args: address ? [address, 2n] : undefined,
+    args: address ? [address] : undefined,
     query: {
       enabled: !!address,
       refetchInterval: 5000,
@@ -87,9 +67,10 @@ function ChickenPage() {
 
   // Extract chicken data
   const happiness = chickenData ? Number(chickenData[0]) : 0
-  const totalEggsLaid = chickenData ? Number(chickenData[4]) : 0
-  const instantActionsRemaining = chickenData ? Number(chickenData[5]) : 10
-  const initialized = chickenData ? chickenData[6] : false
+  const claimableActions = chickenData ? Number(chickenData[1]) : 0
+  const totalEggsLaid = chickenData ? Number(chickenData[3]) : 0
+  const instantActionsRemaining = chickenData ? Number(chickenData[4]) : 10
+  const initialized = chickenData ? chickenData[5] : false
 
   // Check if any transaction is pending (wallet confirmation OR blockchain confirmation)
   const isAnyTransactionPending = 
@@ -485,8 +466,8 @@ function ChickenPage() {
           {/* Stats Grid */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1.5rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "1rem",
             marginBottom: "2rem"
           }}>
             <div className="color-block" style={{
@@ -505,13 +486,13 @@ function ChickenPage() {
                 background: 'hsl(var(--celo-yellow))',
                 border: '2px solid hsl(var(--celo-black))'
               }}></div>
-              <div className="text-body-heavy" style={{ 
+              <div className="text-body-heavy" style={{
                 fontSize: '0.75rem',
                 color: 'hsl(var(--celo-brown))',
                 textTransform: 'uppercase',
                 marginBottom: '0.5rem'
-              }}>Total Eggs Laid</div>
-              <div className="text-body-black" style={{ 
+              }}>Total Eggs</div>
+              <div className="text-body-black" style={{
                 fontSize: '2rem',
                 color: 'hsl(var(--celo-black))'
               }}>
@@ -534,17 +515,46 @@ function ChickenPage() {
                 background: 'hsl(var(--celo-purple))',
                 border: '2px solid hsl(var(--celo-black))'
               }}></div>
-              <div className="text-body-heavy" style={{ 
+              <div className="text-body-heavy" style={{
                 fontSize: '0.75rem',
                 color: 'hsl(var(--celo-brown))',
                 textTransform: 'uppercase',
                 marginBottom: '0.5rem'
-              }}>Instant Actions</div>
-              <div className="text-body-black" style={{ 
+              }}>Instant</div>
+              <div className="text-body-black" style={{
                 fontSize: '2rem',
                 color: 'hsl(var(--celo-black))'
               }}>
                 {instantActionsRemaining} ⚡
+              </div>
+            </div>
+            <div className="color-block" style={{
+              background: 'hsl(var(--celo-tan-2))',
+              padding: '1.5rem',
+              border: '3px solid hsl(var(--celo-black))',
+              textAlign: "center",
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '20px',
+                height: '5px',
+                background: 'hsl(var(--celo-green))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+              <div className="text-body-heavy" style={{
+                fontSize: '0.75rem',
+                color: 'hsl(var(--celo-brown))',
+                textTransform: 'uppercase',
+                marginBottom: '0.5rem'
+              }}>Claimable</div>
+              <div className="text-body-black" style={{
+                fontSize: '2rem',
+                color: 'hsl(var(--celo-black))'
+              }}>
+                {claimableActions} ⏰
               </div>
             </div>
           </div>
@@ -601,19 +611,19 @@ function ChickenPage() {
           {/* Feed Action */}
           <button
             onClick={handleFeed}
-            disabled={!feedAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            disabled={!isActionAvailable || isAnyTransactionPending || !isCorrectNetwork}
             className="color-block"
             style={{
-              background: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              background: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
               border: '3px solid hsl(var(--celo-black))',
               padding: '2rem',
-              cursor: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
-              opacity: feedAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
+              cursor: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
+              opacity: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
               transition: 'var(--transition-fast)',
               boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
-              if (feedAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = 'translateY(-4px)'
                 e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
                 e.currentTarget.style.background = 'hsl(var(--celo-yellow))'
@@ -622,13 +632,13 @@ function ChickenPage() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)'
               e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
-              if (feedAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.background = 'hsl(var(--celo-white))'
               }
             }}
           >
             <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🍗</div>
-            <div className="text-body-black" style={{ 
+            <div className="text-body-black" style={{
               fontSize: '1.3rem',
               color: 'hsl(var(--celo-black))',
               marginBottom: '0.5rem',
@@ -636,31 +646,31 @@ function ChickenPage() {
             }}>
               Feed
             </div>
-            <div className="text-body-heavy" style={{ 
+            <div className="text-body-heavy" style={{
               fontSize: '0.8rem',
               color: 'hsl(var(--celo-brown))',
               textTransform: 'uppercase'
             }}>
-              {!isCorrectNetwork ? 'Wrong network' : isFeedPending ? 'Confirm...' : isFeedConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : feedAvailable ? '+10 happiness' : 'On cooldown'}
+              {!isCorrectNetwork ? 'Wrong network' : isFeedPending ? 'Confirm...' : isFeedConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : isActionAvailable ? '+10 happiness' : 'No actions available'}
             </div>
           </button>
 
           {/* Pet Action */}
           <button
             onClick={handlePet}
-            disabled={!petAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            disabled={!isActionAvailable || isAnyTransactionPending || !isCorrectNetwork}
             className="color-block"
             style={{
-              background: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              background: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
               border: '3px solid hsl(var(--celo-black))',
               padding: '2rem',
-              cursor: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
-              opacity: petAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
+              cursor: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
+              opacity: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
               transition: 'var(--transition-fast)',
               boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
-              if (petAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = 'translateY(-4px)'
                 e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
                 e.currentTarget.style.background = 'hsl(var(--celo-pink))'
@@ -669,13 +679,13 @@ function ChickenPage() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)'
               e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
-              if (petAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.background = 'hsl(var(--celo-white))'
               }
             }}
           >
             <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>❤️</div>
-            <div className="text-body-black" style={{ 
+            <div className="text-body-black" style={{
               fontSize: '1.3rem',
               color: 'hsl(var(--celo-black))',
               marginBottom: '0.5rem',
@@ -683,31 +693,31 @@ function ChickenPage() {
             }}>
               Pet
             </div>
-            <div className="text-body-heavy" style={{ 
+            <div className="text-body-heavy" style={{
               fontSize: '0.8rem',
               color: 'hsl(var(--celo-brown))',
               textTransform: 'uppercase'
             }}>
-              {!isCorrectNetwork ? 'Wrong network' : isPetPending ? 'Confirm...' : isPetConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : petAvailable ? '+10 happiness' : 'On cooldown'}
+              {!isCorrectNetwork ? 'Wrong network' : isPetPending ? 'Confirm...' : isPetConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : isActionAvailable ? '+10 happiness' : 'No actions available'}
             </div>
           </button>
 
           {/* Play Action */}
           <button
             onClick={handlePlay}
-            disabled={!playAvailable || isAnyTransactionPending || !isCorrectNetwork}
+            disabled={!isActionAvailable || isAnyTransactionPending || !isCorrectNetwork}
             className="color-block"
             style={{
-              background: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
+              background: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'hsl(var(--celo-white))' : 'hsl(var(--celo-tan-2))',
               border: '3px solid hsl(var(--celo-black))',
               padding: '2rem',
-              cursor: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
-              opacity: playAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
+              cursor: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 'pointer' : 'not-allowed',
+              opacity: isActionAvailable && !isAnyTransactionPending && isCorrectNetwork ? 1 : 0.6,
               transition: 'var(--transition-fast)',
               boxShadow: '4px 4px 0px hsl(var(--celo-black))'
             }}
             onMouseEnter={(e) => {
-              if (playAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.transform = 'translateY(-4px)'
                 e.currentTarget.style.boxShadow = '8px 8px 0px hsl(var(--celo-black))'
                 e.currentTarget.style.background = 'hsl(var(--celo-purple))'
@@ -716,13 +726,13 @@ function ChickenPage() {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)'
               e.currentTarget.style.boxShadow = '4px 4px 0px hsl(var(--celo-black))'
-              if (playAvailable && !isAnyTransactionPending && isCorrectNetwork) {
+              if (isActionAvailable && !isAnyTransactionPending && isCorrectNetwork) {
                 e.currentTarget.style.background = 'hsl(var(--celo-white))'
               }
             }}
           >
             <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎾</div>
-            <div className="text-body-black" style={{ 
+            <div className="text-body-black" style={{
               fontSize: '1.3rem',
               color: 'hsl(var(--celo-black))',
               marginBottom: '0.5rem',
@@ -730,12 +740,12 @@ function ChickenPage() {
             }}>
               Play
             </div>
-            <div className="text-body-heavy" style={{ 
+            <div className="text-body-heavy" style={{
               fontSize: '0.8rem',
               color: 'hsl(var(--celo-brown))',
               textTransform: 'uppercase'
             }}>
-              {!isCorrectNetwork ? 'Wrong network' : isPlayPending ? 'Confirm...' : isPlayConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : playAvailable ? '+10 happiness' : 'On cooldown'}
+              {!isCorrectNetwork ? 'Wrong network' : isPlayPending ? 'Confirm...' : isPlayConfirming ? 'Processing...' : isAnyTransactionPending ? 'Wait...' : isActionAvailable ? '+10 happiness' : 'No actions available'}
             </div>
           </button>
         </div>
@@ -746,13 +756,13 @@ function ChickenPage() {
           border: '3px solid hsl(var(--celo-black))',
           padding: 'clamp(1.5rem, 4vw, 2rem)'
         }}>
-          <h3 className="text-body-black" style={{ 
+          <h3 className="text-body-black" style={{
             color: 'hsl(var(--celo-black))',
             marginBottom: '1rem',
             fontSize: '1.3rem',
             textTransform: 'uppercase'
           }}>How to Play</h3>
-          <ul className="text-body-heavy" style={{ 
+          <ul className="text-body-heavy" style={{
             color: 'hsl(var(--celo-brown))',
             lineHeight: 1.8,
             paddingLeft: '1.5rem',
@@ -760,10 +770,11 @@ function ChickenPage() {
           }}>
             <li>Perform actions (Feed, Pet, Play) to increase your chicken's happiness</li>
             <li>Each action adds +10 happiness points</li>
-            <li>New users get 10 free instant actions to get started!</li>
-            <li>After using instant actions, each action has a 24-hour cooldown</li>
+            <li>New users start with 10 free instant actions and 10 claimable actions!</li>
+            <li>Actions accumulate over time: 1 action every 2 hours (max 10 stored)</li>
             <li>When happiness reaches 100, you can lay an egg to mint 1 EGG token</li>
             <li>Laying an egg resets happiness to 0</li>
+            <li>Stake USDT to earn more instant actions (1 action per 1000 USDT)</li>
           </ul>
         </div>
       </div>
