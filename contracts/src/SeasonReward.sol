@@ -12,8 +12,12 @@ contract SeasonReward {
     event Withdrawn(address indexed owner, uint256 amount);
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
+        _onlyOwner();
         _;
+    }
+
+    function _onlyOwner() internal view {
+        require(msg.sender == owner, "Not owner");
     }
 
     constructor() {

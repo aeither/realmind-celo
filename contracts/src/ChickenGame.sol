@@ -593,7 +593,7 @@ contract ChickenGame is ReentrancyGuard {
         eggToken.burnFrom(msg.sender, eggsToMerge);
 
         // Calculate MegaEggs to mint (1 MegaEgg per MIN_EGGS_TO_MERGE)
-        uint256 megaEggsToMint = (eggsToMerge / MIN_EGGS_TO_MERGE) * MEGAEGG_REWARD;
+        uint256 megaEggsToMint = (eggsToMerge * MEGAEGG_REWARD) / MIN_EGGS_TO_MERGE;
 
         // Mint MegaEggs to user
         megaEgg.mint(msg.sender, megaEggsToMint);
@@ -823,7 +823,7 @@ contract ChickenGame is ReentrancyGuard {
         if (eggsAmount < MIN_EGGS_TO_MERGE) {
             return 0;
         }
-        return (eggsAmount / MIN_EGGS_TO_MERGE) * MEGAEGG_REWARD;
+        return (eggsAmount * MEGAEGG_REWARD) / MIN_EGGS_TO_MERGE;
     }
 
     /**
