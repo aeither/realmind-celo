@@ -48,7 +48,7 @@ interface BlockscoutResponse {
 
 export class LeaderboardService {
   private redisService: RedisService
-  
+
   // Supported chains configuration with Blockscout APIs
   private chains: { [chainId: number]: ChainConfig } = {
     8453: { // Base
@@ -62,6 +62,12 @@ export class LeaderboardService {
       chainName: 'Celo',
       blockscoutApiUrl: 'https://celo.blockscout.com/api/v2',
       scanUrl: 'https://celoscan.io'
+    },
+    41923: { // EDU Chain
+      chainId: 41923,
+      chainName: 'EDU Chain',
+      blockscoutApiUrl: 'https://educhain.blockscout.com/api/v2',
+      scanUrl: 'https://educhain.blockscout.com'
     }
   }
 
@@ -73,7 +79,7 @@ export class LeaderboardService {
    * Get token holders for a specific contract and chain using Blockscout API with pagination
    */
   async getTokenHolders(
-    contractAddress: string, 
+    contractAddress: string,
     chainId: number,
     limit: number = 1000
   ): Promise<LeaderboardResponse> {
@@ -98,14 +104,14 @@ export class LeaderboardService {
       } catch (error) {
         console.log('Cache lookup failed, proceeding with fresh request')
       }
-      
+
       if (cachedResult) {
         console.log(`📋 Returning cached leaderboard for ${chainConfig.chainName}`)
         return typeof cachedResult === 'string' ? JSON.parse(cachedResult) : cachedResult
       }
 
       console.log(`🔍 Fetching up to ${limit} token holders from ${chainConfig.chainName} Blockscout for contract: ${contractAddress}`)
-      
+
       // Fetch all pages until we reach the limit or no more data
       const allHolders: TokenHolder[] = []
       let nextPageParams: any = null
@@ -114,7 +120,7 @@ export class LeaderboardService {
 
       do {
         pageCount++
-        
+
         // Build API URL with pagination params
         let apiUrl = `${chainConfig.blockscoutApiUrl}/tokens/${contractAddress}/holders`
         if (nextPageParams) {
@@ -126,14 +132,14 @@ export class LeaderboardService {
         }
 
         console.log(`📡 Fetching page ${pageCount}/${maxPages}: ${apiUrl}`)
-        
+
         const response = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
             'User-Agent': 'Realmind-Leaderboard/1.0'
           }
         })
-        
+
         if (!response.ok) {
           throw new Error(`Blockscout API request failed: ${response.status} ${response.statusText}`)
         }
@@ -162,7 +168,7 @@ export class LeaderboardService {
 
         // Set up for next page
         nextPageParams = data.next_page_params
-        
+
         // Safety check to prevent infinite loops
         if (pageCount >= maxPages) {
           console.log(`⚠️ Reached max pages (${maxPages}), stopping pagination`)

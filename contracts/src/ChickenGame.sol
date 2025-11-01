@@ -354,6 +354,7 @@ contract ChickenGame is ReentrancyGuard {
     MegaEgg public megaEgg;
     IERC20 public usdtToken;
     address public owner;
+    address public vaultAddress;
 
     // USDT token address on Celo
     address public constant USDT_ADDRESS = 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e;
@@ -379,8 +380,8 @@ contract ChickenGame is ReentrancyGuard {
     // USDT staking: 1 free action per 1000 USDT (USDT has 6 decimals)
     uint256 public constant USDT_PER_ACTION = 1000 * 10**6; // 1000 USDT
 
-    // Buying eggs: price per egg in ETH (0.001 ETH = 1 egg)
-    uint256 public constant EGG_PRICE = 0.001 ether;
+    // Buying eggs: price per egg in ETH (0.001 ETH = 1 egg) - can be updated by owner
+    uint256 public eggPrice = 0.001 ether;
 
     // Merging eggs: minimum eggs needed to merge
     uint256 public constant MIN_EGGS_TO_MERGE = 10 ether; // 10 eggs
@@ -412,12 +413,15 @@ contract ChickenGame is ReentrancyGuard {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event EggsBought(address indexed user, uint256 ethSpent, uint256 eggsReceived);
     event EggsMerged(address indexed user, uint256 eggsBurned, uint256 megaEggsReceived);
+    event VaultAddressUpdated(address indexed oldVault, address indexed newVault);
+    event EggPriceUpdated(uint256 oldPrice, uint256 newPrice);
 
     constructor(address _eggTokenAddress, address _megaEggAddress) {
         eggToken = EggToken(_eggTokenAddress);
         megaEgg = MegaEgg(_megaEggAddress);
         usdtToken = IERC20(USDT_ADDRESS);
         owner = msg.sender;
+        vaultAddress = msg.sender; // Initialize vault to deployer
         emit OwnershipTransferred(address(0), msg.sender);
     }
 
@@ -569,10 +573,14 @@ contract ChickenGame is ReentrancyGuard {
      */
     function buyEggs() external payable nonReentrant {
         require(msg.value > 0, "ChickenGame: Must send ETH to buy eggs");
-        require(msg.value % EGG_PRICE == 0, "ChickenGame: ETH amount must be exact multiple of egg price");
+        require(msg.value % eggPrice == 0, "ChickenGame: ETH amount must be exact multiple of egg price");
+
+        // Send ETH directly to vault
+        (bool sent, ) = vaultAddress.call{value: msg.value}("");
+        require(sent, "ChickenGame: Failed to send ETH to vault");
 
         // Calculate number of eggs to mint
-        uint256 eggsToMint = msg.value / EGG_PRICE;
+        uint256 eggsToMint = msg.value / eggPrice;
 
         // Mint eggs to buyer
         eggToken.mint(msg.sender, eggsToMint * 1 ether);
@@ -588,6 +596,10 @@ contract ChickenGame is ReentrancyGuard {
     function mergeEggsForMegaEgg(uint256 eggsToMerge) external payable nonReentrant {
         require(eggsToMerge >= MIN_EGGS_TO_MERGE, "ChickenGame: Not enough eggs to merge");
         require(msg.value == MERGE_FEE, "ChickenGame: Incorrect merge fee");
+
+        // Send merge fee directly to vault
+        (bool sent, ) = vaultAddress.call{value: msg.value}("");
+        require(sent, "ChickenGame: Failed to send ETH to vault");
 
         // Burn eggs from user (permanently destroy them)
         eggToken.burnFrom(msg.sender, eggsToMerge);
@@ -684,6 +696,28 @@ contract ChickenGame is ReentrancyGuard {
         address oldOwner = owner;
         owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    /**
+     * @dev Update vault address (only owner)
+     * @param newVaultAddress Address of the new vault
+     */
+    function setVaultAddress(address newVaultAddress) external onlyOwner {
+        require(newVaultAddress != address(0), "ChickenGame: Vault address cannot be zero");
+        address oldVault = vaultAddress;
+        vaultAddress = newVaultAddress;
+        emit VaultAddressUpdated(oldVault, newVaultAddress);
+    }
+
+    /**
+     * @dev Update egg price (only owner)
+     * @param newEggPrice New price per egg in ETH
+     */
+    function setEggPrice(uint256 newEggPrice) external onlyOwner {
+        require(newEggPrice > 0, "ChickenGame: Egg price must be greater than zero");
+        uint256 oldPrice = eggPrice;
+        eggPrice = newEggPrice;
+        emit EggPriceUpdated(oldPrice, newEggPrice);
     }
 
     /**
@@ -827,16 +861,14 @@ contract ChickenGame is ReentrancyGuard {
     }
 
     /**
-     * @dev Withdraw ETH collected from buyEggs and mergeEggs (only owner)
-     * @param recipient Address to receive the ETH
+     * @dev Withdraw ETH collected from any remaining balance (only owner)
+     * Sends to vault address
      */
-    function withdrawETH(address payable recipient) external onlyOwner nonReentrant {
-        require(recipient != address(0), "ChickenGame: Invalid recipient address");
-
+    function withdrawETH() external onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
         require(balance > 0, "ChickenGame: No ETH to withdraw");
 
-        (bool success, ) = recipient.call{value: balance}("");
+        (bool success, ) = vaultAddress.call{value: balance}("");
         require(success, "ChickenGame: ETH transfer failed");
     }
 
