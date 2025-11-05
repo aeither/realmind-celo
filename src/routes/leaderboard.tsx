@@ -22,8 +22,12 @@ function LeaderboardPage() {
   const rewardsConfig = getRewardsConfig(chain?.id || 0)
 
   const fetchLeaderboard = async () => {
-    if (!chain || !contractAddresses) return
+    if (!chain || !contractAddresses) {
+      console.log('[Leaderboard] Skipping fetch - chain or contract not ready')
+      return
+    }
 
+    console.log('[Leaderboard] Starting fetch for chain:', chain.id)
     setLoading(true)
     setError(null)
     
@@ -33,7 +37,13 @@ function LeaderboardPage() {
         chain.id,
         rewardsConfig.maxWinners
       )
-      console.log('Leaderboard result:', result)
+      console.log('[Leaderboard] Result received:', {
+        success: result.success,
+        holdersCount: result.holders?.length,
+        error: result.error
+      })
+      console.log('[Leaderboard] Sample holder data:', result.holders?.[0])
+      
       if (result.success && result.holders) {
         setHolders(result.holders)
         setTotalHolders(result.totalHolders || 0)
@@ -44,11 +54,14 @@ function LeaderboardPage() {
             holder.address.toLowerCase() === address.toLowerCase()
           )
           setUserRank(userIndex >= 0 ? userIndex + 1 : null)
+          console.log('[Leaderboard] User rank:', userIndex >= 0 ? userIndex + 1 : 'Not found')
         }
       } else {
+        console.error('[Leaderboard] Failed to load:', result.error)
         setError(result.error || 'Failed to load leaderboard')
       }
     } catch (err) {
+      console.error('[Leaderboard] Exception:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -69,8 +82,13 @@ function LeaderboardPage() {
   }, [rewardsConfig])
 
   useEffect(() => {
+    console.log('[Leaderboard] Effect triggered - chain:', chain?.id, 'contractAddresses:', !!contractAddresses)
     if (chain && contractAddresses) {
-      fetchLeaderboard()
+      // Add a small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        fetchLeaderboard()
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [chain, contractAddresses])
 
@@ -576,21 +594,64 @@ function LeaderboardPage() {
                         </td>
                         <td style={{ padding: "0.5rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            {/* Simple avatar */}
-                            <div style={{
-                              width: "24px",
-                              height: "24px",
-                              borderRadius: "50%",
-                              background: `hsl(${holder.address.slice(-6).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360}, 70%, 60%)`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "0.6rem",
-                              fontWeight: "600",
-                              color: "white"
-                            }}>
-                              {holder.farcasterUsername ? '🟣' : holder.address.slice(2, 4).toUpperCase()}
-                            </div>
+                            {/* Profile picture or avatar */}
+                            {holder.farcasterPfpUrl && holder.farcasterPfpUrl.trim() !== '' ? (
+                              <>
+                                <img
+                                  src={holder.farcasterPfpUrl}
+                                  alt={holder.farcasterUsername || 'Profile'}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    border: "2px solid #7c3aed",
+                                    objectFit: "cover"
+                                  }}
+                                  onError={(e) => {
+                                    console.error('[Leaderboard] Failed to load image for', holder.farcasterUsername, holder.farcasterPfpUrl);
+                                    // Replace with fallback initials
+                                    const target = e.currentTarget;
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      target.style.display = 'none';
+                                      // Create fallback div
+                                      const fallback = document.createElement('div');
+                                      fallback.style.cssText = `
+                                        width: 32px;
+                                        height: 32px;
+                                        border-radius: 50%;
+                                        background: hsl(${holder.address.slice(-6).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360}, 70%, 60%);
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 0.7rem;
+                                        font-weight: 600;
+                                        color: white;
+                                        border: 2px solid #e5e7eb;
+                                      `;
+                                      fallback.textContent = holder.address.slice(2, 4).toUpperCase();
+                                      parent.insertBefore(fallback, target);
+                                    }
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <div style={{
+                                width: "32px",
+                                height: "32px",
+                                borderRadius: "50%",
+                                background: `hsl(${holder.address.slice(-6).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360}, 70%, 60%)`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "0.7rem",
+                                fontWeight: "600",
+                                color: "white",
+                                border: "2px solid #e5e7eb"
+                              }}>
+                                {holder.address.slice(2, 4).toUpperCase()}
+                              </div>
+                            )}
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
                               {holder.farcasterUsername ? (
                                 <>
@@ -646,7 +707,7 @@ function LeaderboardPage() {
                         </td>
                         <td style={{ padding: "0.5rem", textAlign: "right" }}>
                           <span style={{ fontWeight: "600", color: "#111827", fontSize: "0.8rem" }}>
-                            {leaderboardService.formatBalance(holder.balance)} XP
+                            {leaderboardService.formatBalance(holder.balance)}
                           </span>
                         </td>
                         <td style={{ padding: "0.5rem", textAlign: "center" }}>

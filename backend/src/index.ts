@@ -40,7 +40,10 @@ app.get('/', (c) => {
       '/leaderboard',
       '/leaderboard/chains',
       '/farcaster/map',
-      '/farcaster/mappings'
+      '/farcaster/mappings',
+      '/farcaster/profile/:address',
+      '/farcaster/clear-cache/:address',
+      '/farcaster/check-fid/:fid'
     ]
   })
 })
@@ -617,6 +620,231 @@ app.post('/farcaster/mappings', async (c) => {
     return c.json({
       success: false,
       error: 'Failed to fetch Farcaster mappings',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Check what addresses are linked to a Farcaster FID (for debugging)
+app.get('/farcaster/check-fid/:fid', async (c) => {
+  try {
+    const fid = c.req.param('fid')
+    
+    if (!fid) {
+      return c.json({
+        success: false,
+        error: 'FID is required'
+      }, 400)
+    }
+
+    const neynarApiKey = process.env.NEYNAR_API_KEY
+    if (!neynarApiKey) {
+      return c.json({
+        success: false,
+        error: 'Neynar API not configured',
+        timestamp: new Date().toISOString()
+      }, 503)
+    }
+
+    console.log(`[Check FID] Fetching data for FID ${fid}`)
+    const response = await fetch(
+      `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+      {
+        headers: {
+          'x-api-key': neynarApiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Neynar API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const user = data.users?.[0]
+
+    if (!user) {
+      return c.json({
+        success: false,
+        error: `No user found for FID ${fid}`,
+        timestamp: new Date().toISOString()
+      }, 404)
+    }
+
+    console.log(`[Check FID] Found user:`, {
+      username: user.username,
+      fid: user.fid,
+      custody: user.custody_address,
+      verified: user.verified_addresses?.eth_addresses || [],
+      pfp_url: user.pfp_url
+    })
+
+    return c.json({
+      success: true,
+      user: {
+        fid: user.fid,
+        username: user.username,
+        displayName: user.display_name,
+        pfpUrl: user.pfp_url || '',
+        custodyAddress: user.custody_address,
+        verifiedAddresses: user.verified_addresses?.eth_addresses || [],
+        allAddresses: [
+          user.custody_address,
+          ...(user.verified_addresses?.eth_addresses || [])
+        ].filter(Boolean),
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('[Check FID] Error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to check FID',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Clear Farcaster cache for a specific address (for debugging)
+app.delete('/farcaster/clear-cache/:address', async (c) => {
+  try {
+    const address = c.req.param('address')
+    
+    if (!address) {
+      return c.json({
+        success: false,
+        error: 'Address is required'
+      }, 400)
+    }
+
+    // Use Redis service to get the key and delete it
+    const key = `farcaster:${address.toLowerCase()}`
+    const redis = (redisService as any).redis
+    
+    if (redis) {
+      await redis.del(key)
+      console.log(`🗑️ Cleared cache for ${address}`)
+      
+      return c.json({
+        success: true,
+        message: `Cache cleared for ${address}`,
+        key: key,
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      return c.json({
+        success: false,
+        error: 'Redis not available',
+        timestamp: new Date().toISOString()
+      }, 503)
+    }
+  } catch (error) {
+    console.error('Error clearing cache:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to clear cache',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Get Farcaster profile for a single address
+app.get('/farcaster/profile/:address', async (c) => {
+  try {
+    const address = c.req.param('address')
+
+    if (!address) {
+      return c.json({
+        success: false,
+        error: 'Address is required'
+      }, 400)
+    }
+
+    console.log(`[Farcaster Profile] Fetching profile for ${address}`)
+
+    // If not cached, fetch from Neynar (always fetch fresh for profile page to get full data)
+    const neynarApiKey = process.env.NEYNAR_API_KEY
+    if (!neynarApiKey) {
+      return c.json({
+        success: false,
+        error: 'Neynar API not configured',
+        timestamp: new Date().toISOString()
+      }, 503)
+    }
+
+    console.log(`[Farcaster Profile] Calling Neynar API for ${address}`)
+    const response = await fetch(
+      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}&address_types=custody_address,verified_address`,
+      {
+        headers: {
+          'x-api-key': neynarApiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`[Farcaster Profile] Neynar API error: ${response.status}`)
+      throw new Error(`Neynar API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log(`[Farcaster Profile] Neynar response keys:`, Object.keys(data))
+    
+    const userData = data[address.toLowerCase()]?.[0]
+    console.log(`[Farcaster Profile] User data for ${address}:`, {
+      found: !!userData,
+      username: userData?.username,
+      fid: userData?.fid,
+      pfp_url: userData?.pfp_url,
+      display_name: userData?.display_name,
+      hasPfpUrl: !!userData?.pfp_url
+    })
+
+    if (!userData) {
+      console.log(`[Farcaster Profile] No Farcaster profile found for ${address}`)
+      return c.json({
+        success: true,
+        profile: null,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    // Extract profile picture URL - try multiple fields
+    const pfpUrl = userData.pfp_url || userData.pfp?.url || ''
+    console.log(`[Farcaster Profile] Extracted pfpUrl: "${pfpUrl}"`)
+
+    // Cache the data with the profile picture
+    await redisService.storeFarcasterMapping(
+      address,
+      userData.username,
+      userData.fid,
+      pfpUrl
+    )
+    console.log(`[Farcaster Profile] ✅ Cached profile for ${address} (pfpUrl: ${pfpUrl ? 'yes' : 'no'})`)
+
+    return c.json({
+      success: true,
+      profile: {
+        displayName: userData.display_name || userData.username,
+        username: userData.username,
+        pfpUrl: pfpUrl,
+        bio: userData.profile?.bio?.text || '',
+        followerCount: userData.follower_count,
+        followingCount: userData.following_count,
+        fid: userData.fid,
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('[Farcaster Profile] Error fetching profile:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to fetch Farcaster profile',
       details: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, 500)

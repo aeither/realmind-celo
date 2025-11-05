@@ -5,6 +5,7 @@ export interface TokenHolder {
   balance: string;
   farcasterUsername?: string;
   farcasterFid?: number;
+  farcasterPfpUrl?: string;
 }
 
 export interface LeaderboardResponse {
@@ -62,24 +63,38 @@ export class LeaderboardService {
       }
 
       const data = JSON.parse(responseText);
+console.log('[LeaderboardService] Data received:', data);
 
       // Fetch Farcaster mappings for all addresses
       if (data.success && data.holders && data.holders.length > 0) {
         const addresses = data.holders.map((holder: TokenHolder) => holder.address);
         const mappings = await this.getFarcasterMappings(addresses);
+        
+        console.log('[LeaderboardService] Farcaster mappings received:', {
+          totalMappings: Object.keys(mappings).length,
+          sampleMapping: Object.values(mappings)[0]
+        });
 
         // Merge Farcaster data with holders
         data.holders = data.holders.map((holder: TokenHolder) => {
           const mapping = mappings[holder.address.toLowerCase()];
           if (mapping) {
+            console.log('[LeaderboardService] Merging data for', holder.address.slice(0, 10), '...', {
+              hasUsername: !!mapping.username,
+              hasPfpUrl: !!mapping.pfpUrl,
+              pfpUrl: mapping.pfpUrl?.slice(0, 50)
+            });
             return {
               ...holder,
               farcasterUsername: mapping.username,
-              farcasterFid: mapping.fid
+              farcasterFid: mapping.fid,
+              farcasterPfpUrl: mapping.pfpUrl
             };
           }
           return holder;
         });
+        
+        console.log('[LeaderboardService] Final holder sample:', data.holders[0]);
       }
 
       return data;
@@ -95,7 +110,7 @@ export class LeaderboardService {
   /**
    * Get Farcaster username mappings for multiple addresses
    */
-  async getFarcasterMappings(addresses: string[]): Promise<Record<string, { username: string; fid: number }>> {
+  async getFarcasterMappings(addresses: string[]): Promise<Record<string, { username: string; fid: number; pfpUrl?: string }>> {
     try {
       const response = await fetch(`${this.backendUrl}/farcaster/mappings`, {
         method: 'POST',

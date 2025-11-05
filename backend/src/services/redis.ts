@@ -286,24 +286,25 @@ export class RedisService {
     return `farcaster:${address.toLowerCase()}`
   }
 
-  async storeFarcasterMapping(address: string, username: string, fid: number): Promise<void> {
+  async storeFarcasterMapping(address: string, username: string, fid: number, pfpUrl?: string): Promise<void> {
     try {
       const key = this.getFarcasterMappingKey(address)
       const data = {
         username,
         fid,
+        pfpUrl: pfpUrl || '',
         updatedAt: new Date().toISOString()
       }
 
       await this.redis.set(key, JSON.stringify(data))
-      console.log(`✅ Stored Farcaster mapping: ${address} -> @${username}`)
+      console.log(`✅ Stored Farcaster mapping: ${address.slice(0, 10)}... -> @${username} (pfp: ${pfpUrl ? 'YES' : 'NO'})`)
     } catch (error) {
       console.error('❌ Failed to store Farcaster mapping:', error)
       throw error
     }
   }
 
-  async getFarcasterMapping(address: string): Promise<{ username: string; fid: number } | null> {
+  async getFarcasterMapping(address: string): Promise<{ username: string; fid: number; pfpUrl?: string; updatedAt?: string } | null> {
     try {
       const key = this.getFarcasterMappingKey(address)
       const data = await this.redis.get(key)
@@ -314,37 +315,57 @@ export class RedisService {
 
       if (typeof data === 'string') {
         const parsed = JSON.parse(data)
-        return { username: parsed.username, fid: parsed.fid }
+        return { username: parsed.username, fid: parsed.fid, pfpUrl: parsed.pfpUrl, updatedAt: parsed.updatedAt }
       }
 
       // Handle case where data is already parsed
-      return { username: (data as any).username, fid: (data as any).fid }
+      return { 
+        username: (data as any).username, 
+        fid: (data as any).fid, 
+        pfpUrl: (data as any).pfpUrl,
+        updatedAt: (data as any).updatedAt
+      }
     } catch (error) {
       console.error('❌ Failed to get Farcaster mapping:', error)
       return null
     }
   }
 
-  async getBulkFarcasterMappings(addresses: string[]): Promise<Record<string, { username: string; fid: number }>> {
+  async getBulkFarcasterMappings(addresses: string[], skipCache: boolean = false): Promise<Record<string, { username: string; fid: number; pfpUrl?: string }>> {
     try {
-      const mappings: Record<string, { username: string; fid: number }> = {}
+      const mappings: Record<string, { username: string; fid: number; pfpUrl?: string }> = {}
       const uncachedAddresses: string[] = []
 
-      // First, check Redis cache for all addresses
-      for (const address of addresses) {
-        const mapping = await this.getFarcasterMapping(address)
-        if (mapping) {
-          mappings[address.toLowerCase()] = mapping
-        } else {
-          uncachedAddresses.push(address)
+      if (skipCache) {
+        console.log(`⚡ Skipping cache, fetching all ${addresses.length} addresses fresh`)
+        uncachedAddresses.push(...addresses)
+      } else {
+        // First, check Redis cache for all addresses
+        for (const address of addresses) {
+          const mapping = await this.getFarcasterMapping(address)
+          if (mapping) {
+            // Refetch if cached without pfpUrl (empty string or undefined)
+            // This ensures we always try to get the profile picture
+            const hasPfpUrl = mapping.pfpUrl && mapping.pfpUrl.trim() !== ''
+            
+            if (!hasPfpUrl) {
+              console.log(`🔄 Refetching ${address.slice(0, 10)}... (cached without pfpUrl, username: @${mapping.username})`)
+              uncachedAddresses.push(address)
+            } else {
+              mappings[address.toLowerCase()] = mapping
+            }
+          } else {
+            uncachedAddresses.push(address)
+          }
         }
+        
+        console.log(`📦 Cache hit: ${Object.keys(mappings).length} / ${addresses.length} addresses`)
       }
-
-      console.log(`📦 Cache hit: ${Object.keys(mappings).length} / ${addresses.length} addresses`)
 
       // If we have uncached addresses, fetch from Neynar API
       if (uncachedAddresses.length > 0) {
         console.log(`🔍 Fetching ${uncachedAddresses.length} addresses from Neynar API`)
+        console.log(`🔍 Uncached addresses:`, uncachedAddresses.map(a => a.slice(0, 10) + '...'))
         
         const neynarApiKey = process.env.NEYNAR_API_KEY
         if (!neynarApiKey) {
@@ -359,6 +380,7 @@ export class RedisService {
             const chunk = uncachedAddresses.slice(i, i + chunkSize)
             const addressList = chunk.join(',')
             
+            console.log(`📡 Calling Neynar for chunk of ${chunk.length} addresses`)
             const response = await fetch(
               `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${addressList}&address_types=custody_address,verified_address`,
               {
@@ -371,6 +393,14 @@ export class RedisService {
 
             if (response.ok) {
               const data = await response.json()
+              console.log(`📬 Neynar returned data for ${Object.keys(data).length} addresses`)
+              
+              // Log which addresses were found and which weren't
+              const foundAddresses = Object.keys(data).map(k => k.toLowerCase())
+              const notFound = chunk.filter(addr => !foundAddresses.includes(addr.toLowerCase()))
+              if (notFound.length > 0) {
+                console.log(`⚠️ Not found in Neynar:`, notFound.map(a => a.slice(0, 10) + '...'))
+              }
               
               // Process Neynar response and cache the results
               for (const [addr, users] of Object.entries(data)) {
@@ -378,20 +408,29 @@ export class RedisService {
                   const user = users[0] as any
                   const username = user.username
                   const fid = user.fid
+                  const pfpUrl = user.pfp_url || user.pfp?.url || ''
+                  
+                  console.log(`✅ Found @${username} (FID ${fid}) for ${addr.slice(0, 10)}... pfpUrl: ${pfpUrl ? 'YES' : 'NO'}`)
                   
                   if (username && fid) {
-                    // Store in cache for future requests
-                    await this.storeFarcasterMapping(addr, username, fid)
-                    mappings[addr.toLowerCase()] = { username, fid }
+                    // Store in cache for future requests (including pfp)
+                    await this.storeFarcasterMapping(addr, username, fid, pfpUrl)
+                    mappings[addr.toLowerCase()] = { username, fid, pfpUrl }
                   }
+                } else {
+                  console.log(`⚠️ Empty user array for ${addr.slice(0, 10)}...`)
                 }
               }
             } else {
+              const errorText = await response.text()
               console.error(`❌ Neynar API error: ${response.status} ${response.statusText}`)
+              console.error(`❌ Error details:`, errorText.slice(0, 200))
+              console.error(`❌ Failed addresses:`, chunk.map(a => a.slice(0, 10) + '...'))
             }
           }
           
-          console.log(`✅ Fetched ${Object.keys(mappings).length - (addresses.length - uncachedAddresses.length)} new mappings from Neynar`)
+          const newFetched = Object.keys(mappings).length - (addresses.length - uncachedAddresses.length)
+          console.log(`✅ Fetched ${newFetched} new mappings from Neynar (out of ${uncachedAddresses.length} requested)`)
         } catch (error) {
           console.error('❌ Failed to fetch from Neynar API:', error)
         }

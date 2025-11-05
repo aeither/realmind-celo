@@ -54,20 +54,20 @@ pnpm build
 Create a `.env` file in the root directory:
 
 ```bash
-# Neynar API for Farcaster profiles (get at https://neynar.com)
-VITE_NEYNAR_API_KEY=your_neynar_api_key
-
-# Backend URL (optional, defaults to localhost)
+# Backend URL (optional, defaults to localhost:3000)
 VITE_BACKEND_URL=http://localhost:3000
 ```
 
 ### Backend Environment Variables
 
-See [backend/README.md](./backend/README.md) for backend configuration including Neynar API key setup.
+See [backend/README.md](./backend/README.md) for backend configuration including:
+- Neynar API key for Farcaster integration
+- Redis configuration
+- AI Gateway setup
 
 ### Farcaster Integration
 
-The app displays Farcaster usernames instead of wallet addresses when available. See [FARCASTER_INTEGRATION.md](./FARCASTER_INTEGRATION.md) for detailed setup and implementation guide.
+The app displays Farcaster usernames and profile pictures in the leaderboard and profile pages. All Farcaster API calls are made through the backend to keep API keys secure.
 
 ## Smart Contracts
 

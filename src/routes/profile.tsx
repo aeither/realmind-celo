@@ -21,42 +21,35 @@ type FarcasterProfile = {
 
 const getFarcasterProfile = async (address: string): Promise<FarcasterProfile | null> => {
   try {
-    const apiKey = import.meta.env.VITE_NEYNAR_API_KEY;
-    if (!apiKey) {
-      console.error('VITE_NEYNAR_API_KEY not found in environment');
-      return null;
-    }
-
-    const response = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}&address_types=custody_address,verified_address`,
-      {
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Use backend endpoint to fetch Farcaster profile (keeps API key secure)
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const response = await fetch(`${backendUrl}/farcaster/profile/${address}`);
 
     if (!response.ok) {
-      throw new Error(`Neynar API error: ${response.status}`);
+      console.error(`Backend API error: ${response.status}`);
+      return null;
     }
 
     const data = await response.json();
 
-    // Neynar returns an object with addresses as keys
-    const userData = data[address.toLowerCase()]?.[0];
-
-    if (!userData) {
+    if (!data.success || !data.profile) {
+      console.log('[Profile] No Farcaster profile found');
       return null;
     }
 
+    console.log('[Profile] Farcaster data received:', {
+      username: data.profile.username,
+      pfpUrl: data.profile.pfpUrl,
+      hasPfp: !!data.profile.pfpUrl
+    });
+
     return {
-      displayName: userData.display_name || userData.username,
-      username: userData.username,
-      pfpUrl: userData.pfp_url || '',
-      bio: userData.profile?.bio?.text || '',
-      followerCount: userData.follower_count,
-      followingCount: userData.following_count,
+      displayName: data.profile.displayName,
+      username: data.profile.username,
+      pfpUrl: data.profile.pfpUrl || '',
+      bio: data.profile.bio || '',
+      followerCount: data.profile.followerCount,
+      followingCount: data.profile.followingCount,
     };
   } catch (err) {
     console.error('Error fetching Farcaster profile:', err);
@@ -192,54 +185,75 @@ function ProfilePage() {
         }}>
           {/* Profile Header */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
-            {profile?.pfpUrl ? (
-              <div style={{ position: 'relative' }}>
-                <img
-                  src={profile.pfpUrl}
-                  alt="Profile"
-                  style={{
-                    width: '150px',
-                    height: '150px',
-                    border: '4px solid hsl(var(--celo-black))',
-                    objectFit: 'cover'
-                  }}
-                />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              {profile?.pfpUrl && profile.pfpUrl.trim() !== '' ? (
+                <>
+                  <img
+                    src={profile.pfpUrl}
+                    alt="Profile"
+                    style={{
+                      width: '150px',
+                      height: '150px',
+                      border: '4px solid hsl(var(--celo-black))',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      console.error('[Profile] Failed to load image:', profile.pfpUrl);
+                      // Hide image and show fallback
+                      const img = e.currentTarget;
+                      const container = img.parentElement;
+                      if (container) {
+                        img.style.display = 'none';
+                        // Create and show fallback
+                        const fallback = document.createElement('div');
+                        fallback.style.cssText = `
+                          width: 150px;
+                          height: 150px;
+                          background: linear-gradient(135deg, hsl(var(--celo-purple)), hsl(var(--celo-pink)));
+                          border: 4px solid hsl(var(--celo-black));
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          color: hsl(var(--celo-white));
+                          font-size: 3rem;
+                          font-weight: var(--font-weight-body-black);
+                          border-radius: 8px;
+                        `;
+                        fallback.textContent = address?.slice(2, 4).toUpperCase() || '??';
+                        container.insertBefore(fallback, img);
+                      }
+                    }}
+                  />
+                </>
+              ) : (
                 <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '30px',
-                  height: '8px',
-                  background: 'hsl(var(--celo-yellow))',
-                  border: '2px solid hsl(var(--celo-black))'
-                }}></div>
-              </div>
-            ) : (
+                  width: '150px',
+                  height: '150px',
+                  background: 'linear-gradient(135deg, hsl(var(--celo-purple)), hsl(var(--celo-pink)))',
+                  border: '4px solid hsl(var(--celo-black))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'hsl(var(--celo-white))',
+                  fontSize: '3rem',
+                  fontWeight: 'var(--font-weight-body-black)',
+                  borderRadius: '8px'
+                }}>
+                  {address?.slice(2, 4).toUpperCase()}
+                </div>
+              )}
               <div style={{
-                width: '150px',
-                height: '150px',
-                background: 'linear-gradient(135deg, hsl(var(--celo-purple)), hsl(var(--celo-pink)))',
-                border: '4px solid hsl(var(--celo-black))',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'hsl(var(--celo-white))',
-                fontSize: '3rem',
-                fontWeight: 'var(--font-weight-body-black)',
-                position: 'relative'
-              }}>
-                {address?.slice(2, 4).toUpperCase()}
-                <div style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  right: '-10px',
-                  width: '30px',
-                  height: '8px',
-                  background: 'hsl(var(--celo-yellow))',
-                  border: '2px solid hsl(var(--celo-black))'
-                }}></div>
-              </div>
-            )}
+                position: 'absolute',
+                top: '-10px',
+                right: '-10px',
+                width: '30px',
+                height: '8px',
+                background: 'hsl(var(--celo-yellow))',
+                border: '2px solid hsl(var(--celo-black))'
+              }}></div>
+            </div>
 
             <div className="flex-1 text-center md:text-left">
               {profile ? (
