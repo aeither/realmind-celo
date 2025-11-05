@@ -7,6 +7,7 @@ import { OnchainKitProvider } from '@coinbase/onchainkit'
 import { base } from 'wagmi/chains'
 import { routeTree } from './routeTree.gen'
 import { config } from './wagmi'
+import { FarcasterProvider } from './contexts/FarcasterContext'
 
 const router = createRouter({ routeTree })
 
@@ -34,28 +35,30 @@ function App() {
   const initialState = cookie ? cookieToInitialState(config, cookie) : undefined
 
   return (
-    <WagmiProvider config={config} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>
-        <OnchainKitProvider
-          apiKey={import.meta.env.VITE_ONCHAINKIT_API_KEY}
-          chain={base}
-        >
-          <RouterProvider router={router} />
-          <Toaster
-            theme="light"
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: '#ffffff',
-                border: '1px solid #e5e7eb',
-                color: '#1f2937',
-                borderRadius: '12px'
-              },
-            }}
-          />
-        </OnchainKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <FarcasterProvider>
+      <WagmiProvider config={config} initialState={initialState}>
+        <QueryClientProvider client={queryClient}>
+          <OnchainKitProvider
+            apiKey={import.meta.env.VITE_ONCHAINKIT_API_KEY}
+            chain={base}
+          >
+            <RouterProvider router={router} />
+            <Toaster
+              theme="light"
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  color: '#1f2937',
+                  borderRadius: '12px'
+                },
+              }}
+            />
+          </OnchainKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </FarcasterProvider>
   )
 }
 

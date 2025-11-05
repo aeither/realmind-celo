@@ -38,7 +38,9 @@ app.get('/', (c) => {
       '/health/self',
       '/api/self/verify',
       '/leaderboard',
-      '/leaderboard/chains'
+      '/leaderboard/chains',
+      '/farcaster/map',
+      '/farcaster/mappings'
     ]
   })
 })
@@ -175,6 +177,10 @@ Example format:
 const quizService = new QuizService()
 const leaderboardService = new LeaderboardService()
 const selfService = new SelfService()
+
+// Import RedisService for Farcaster mappings
+import { RedisService } from './services/redis.js'
+const redisService = new RedisService()
 
 // Daily Quiz Endpoint - Get the latest daily quiz
 app.get('/daily-quiz', async (c) => {
@@ -547,6 +553,70 @@ app.get('/leaderboard/scan-url', async (c) => {
     return c.json({
       success: false,
       error: 'Failed to get scan URL',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Farcaster Mapping Endpoints
+
+// Store Farcaster username mapping
+app.post('/farcaster/map', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { address, username, fid } = body
+
+    if (!address || !username || !fid) {
+      return c.json({
+        success: false,
+        error: 'Address, username, and fid are required'
+      }, 400)
+    }
+
+    await redisService.storeFarcasterMapping(address, username, fid)
+
+    return c.json({
+      success: true,
+      message: 'Farcaster mapping stored successfully',
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error storing Farcaster mapping:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to store Farcaster mapping',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Get Farcaster mappings for multiple addresses
+app.post('/farcaster/mappings', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { addresses } = body
+
+    if (!addresses || !Array.isArray(addresses)) {
+      return c.json({
+        success: false,
+        error: 'Addresses array is required'
+      }, 400)
+    }
+
+    const mappings = await redisService.getBulkFarcasterMappings(addresses)
+
+    return c.json({
+      success: true,
+      mappings,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error fetching Farcaster mappings:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to fetch Farcaster mappings',
       details: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, 500)

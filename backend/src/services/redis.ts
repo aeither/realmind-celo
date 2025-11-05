@@ -279,4 +279,129 @@ export class RedisService {
       throw error
     }
   }
+
+  // ============ FARCASTER USERNAME MAPPING ============
+
+  private getFarcasterMappingKey(address: string): string {
+    return `farcaster:${address.toLowerCase()}`
+  }
+
+  async storeFarcasterMapping(address: string, username: string, fid: number): Promise<void> {
+    try {
+      const key = this.getFarcasterMappingKey(address)
+      const data = {
+        username,
+        fid,
+        updatedAt: new Date().toISOString()
+      }
+
+      await this.redis.set(key, JSON.stringify(data))
+      console.log(`✅ Stored Farcaster mapping: ${address} -> @${username}`)
+    } catch (error) {
+      console.error('❌ Failed to store Farcaster mapping:', error)
+      throw error
+    }
+  }
+
+  async getFarcasterMapping(address: string): Promise<{ username: string; fid: number } | null> {
+    try {
+      const key = this.getFarcasterMappingKey(address)
+      const data = await this.redis.get(key)
+
+      if (!data) {
+        return null
+      }
+
+      if (typeof data === 'string') {
+        const parsed = JSON.parse(data)
+        return { username: parsed.username, fid: parsed.fid }
+      }
+
+      // Handle case where data is already parsed
+      return { username: (data as any).username, fid: (data as any).fid }
+    } catch (error) {
+      console.error('❌ Failed to get Farcaster mapping:', error)
+      return null
+    }
+  }
+
+  async getBulkFarcasterMappings(addresses: string[]): Promise<Record<string, { username: string; fid: number }>> {
+    try {
+      const mappings: Record<string, { username: string; fid: number }> = {}
+      const uncachedAddresses: string[] = []
+
+      // First, check Redis cache for all addresses
+      for (const address of addresses) {
+        const mapping = await this.getFarcasterMapping(address)
+        if (mapping) {
+          mappings[address.toLowerCase()] = mapping
+        } else {
+          uncachedAddresses.push(address)
+        }
+      }
+
+      console.log(`📦 Cache hit: ${Object.keys(mappings).length} / ${addresses.length} addresses`)
+
+      // If we have uncached addresses, fetch from Neynar API
+      if (uncachedAddresses.length > 0) {
+        console.log(`🔍 Fetching ${uncachedAddresses.length} addresses from Neynar API`)
+        
+        const neynarApiKey = process.env.NEYNAR_API_KEY
+        if (!neynarApiKey) {
+          console.warn('⚠️ NEYNAR_API_KEY not configured, skipping Neynar fetch')
+          return mappings
+        }
+
+        try {
+          // Neynar API supports up to 350 addresses per request
+          const chunkSize = 350
+          for (let i = 0; i < uncachedAddresses.length; i += chunkSize) {
+            const chunk = uncachedAddresses.slice(i, i + chunkSize)
+            const addressList = chunk.join(',')
+            
+            const response = await fetch(
+              `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${addressList}&address_types=custody_address,verified_address`,
+              {
+                headers: {
+                  'x-api-key': neynarApiKey,
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+
+            if (response.ok) {
+              const data = await response.json()
+              
+              // Process Neynar response and cache the results
+              for (const [addr, users] of Object.entries(data)) {
+                if (Array.isArray(users) && users.length > 0) {
+                  const user = users[0] as any
+                  const username = user.username
+                  const fid = user.fid
+                  
+                  if (username && fid) {
+                    // Store in cache for future requests
+                    await this.storeFarcasterMapping(addr, username, fid)
+                    mappings[addr.toLowerCase()] = { username, fid }
+                  }
+                }
+              }
+            } else {
+              console.error(`❌ Neynar API error: ${response.status} ${response.statusText}`)
+            }
+          }
+          
+          console.log(`✅ Fetched ${Object.keys(mappings).length - (addresses.length - uncachedAddresses.length)} new mappings from Neynar`)
+        } catch (error) {
+          console.error('❌ Failed to fetch from Neynar API:', error)
+        }
+      }
+
+      console.log(`✅ Retrieved ${Object.keys(mappings).length} Farcaster mappings out of ${addresses.length} addresses`)
+      return mappings
+    } catch (error) {
+      console.error('❌ Failed to get bulk Farcaster mappings:', error)
+      return {}
+    }
+  }
 }

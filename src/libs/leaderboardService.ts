@@ -3,6 +3,8 @@
 export interface TokenHolder {
   address: string;
   balance: string;
+  farcasterUsername?: string;
+  farcasterFid?: number;
 }
 
 export interface LeaderboardResponse {
@@ -38,11 +40,11 @@ export class LeaderboardService {
       const response = await fetch(
         `${this.backendUrl}/leaderboard?contract=${contractAddress}&chainId=${chainId}&limit=${limit}`
       );
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.error || errorMessage;
@@ -50,16 +52,36 @@ export class LeaderboardService {
           // If response is not JSON, use the text as error message
           errorMessage = errorText || errorMessage;
         }
-        
+
         throw new Error(errorMessage);
       }
-      
+
       const responseText = await response.text();
       if (!responseText.trim()) {
         throw new Error('Empty response from server');
       }
-      
+
       const data = JSON.parse(responseText);
+
+      // Fetch Farcaster mappings for all addresses
+      if (data.success && data.holders && data.holders.length > 0) {
+        const addresses = data.holders.map((holder: TokenHolder) => holder.address);
+        const mappings = await this.getFarcasterMappings(addresses);
+
+        // Merge Farcaster data with holders
+        data.holders = data.holders.map((holder: TokenHolder) => {
+          const mapping = mappings[holder.address.toLowerCase()];
+          if (mapping) {
+            return {
+              ...holder,
+              farcasterUsername: mapping.username,
+              farcasterFid: mapping.fid
+            };
+          }
+          return holder;
+        });
+      }
+
       return data;
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -67,6 +89,32 @@ export class LeaderboardService {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch leaderboard'
       };
+    }
+  }
+
+  /**
+   * Get Farcaster username mappings for multiple addresses
+   */
+  async getFarcasterMappings(addresses: string[]): Promise<Record<string, { username: string; fid: number }>> {
+    try {
+      const response = await fetch(`${this.backendUrl}/farcaster/mappings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ addresses }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch Farcaster mappings');
+        return {};
+      }
+
+      const data = await response.json();
+      return data.mappings || {};
+    } catch (error) {
+      console.error('Error fetching Farcaster mappings:', error);
+      return {};
     }
   }
 

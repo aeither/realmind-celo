@@ -4,7 +4,7 @@ import { useAccount, useReadContract, useDisconnect, useConnect, useConnectors }
 import { formatEther } from 'viem';
 import { getContractAddresses, token1ABI } from '../libs/constants';
 import { useEffect, useState } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+import { useFarcaster } from '../contexts/FarcasterContext';
 import WalletModal from './WalletModal';
 
 interface GlobalHeaderProps {
@@ -22,38 +22,76 @@ function GlobalHeader({
   const { disconnect } = useDisconnect();
   const { connect } = useConnect();
   const connectors = useConnectors();
-  const [isMiniApp, setIsMiniApp] = useState<boolean | null>(null);
+  const { isMiniApp, user: farcasterUser, isLoading: isFarcasterLoading } = useFarcaster();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [hasAutoConnected, setHasAutoConnected] = useState(false);
 
-  // Detect if running in Farcaster Mini App
+  // Reset auto-connect flag when disconnected
   useEffect(() => {
-    const detectEnvironment = async () => {
-      try {
-        const isInMiniApp = await sdk.isInMiniApp();
-        setIsMiniApp(isInMiniApp);
+    if (!isConnected) {
+      setHasAutoConnected(false);
+    }
+  }, [isConnected]);
 
-        if (isInMiniApp) {
-          const context = await sdk.context;
-          console.log('Farcaster context:', context.user.username);
+  // Auto-connect when in Farcaster Mini App
+  useEffect(() => {
+    if (isMiniApp && !isConnected && !hasAutoConnected && !isFarcasterLoading) {
+      const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp');
+
+      if (farcasterConnector) {
+        console.log('Auto-connecting to Farcaster wallet...');
+        connect({ connector: farcasterConnector });
+        setHasAutoConnected(true);
+      }
+    }
+  }, [isMiniApp, isConnected, hasAutoConnected, isFarcasterLoading, connectors, connect]);
+
+  // Store Farcaster mapping when user connects
+  useEffect(() => {
+    const storeFarcasterMapping = async () => {
+      if (isConnected && address && isMiniApp && farcasterUser) {
+        try {
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+          const response = await fetch(`${backendUrl}/farcaster/map`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              address,
+              username: farcasterUser.username,
+              fid: farcasterUser.fid,
+            }),
+          });
+
+          if (response.ok) {
+            console.log('Farcaster mapping stored successfully');
+          } else {
+            console.error('Failed to store Farcaster mapping');
+          }
+        } catch (error) {
+          console.error('Error storing Farcaster mapping:', error);
         }
-      } catch (error) {
-        console.error('Error detecting Mini App environment:', error);
-        setIsMiniApp(false);
       }
     };
 
-    detectEnvironment();
-  }, []);
+    storeFarcasterMapping();
+  }, [isConnected, address, isMiniApp, farcasterUser]);
 
   const handleConnectWallet = () => {
-    const farcasterConnector = connectors.find(c => c.id === 'farcasterMiniApp');
+    console.log('Connect button clicked. isMiniApp:', isMiniApp, 'isLoading:', isFarcasterLoading);
+    const farcasterConnector = connectors.find(c => c.id === 'farcaster');
 
     if (isMiniApp && farcasterConnector) {
       // In Farcaster Mini App, connect directly with Farcaster
+      console.log('Connecting directly to Farcaster wallet');
       connect({ connector: farcasterConnector });
-    } else {
+    } else if (!isMiniApp) {
       // In browser, open modal with all wallet options
+      console.log('Opening wallet modal for browser');
       setIsWalletModalOpen(true);
+    } else {
+      console.log('Farcaster connector not found, but in Mini App');
     }
   };
 
@@ -208,15 +246,18 @@ function GlobalHeader({
                   background: "hsl(var(--celo-green))",
                   border: "1px solid hsl(var(--celo-black))"
                 }}></div>
-                <span style={{ 
-                  fontFamily: "var(--font-body)", 
+                <span style={{
+                  fontFamily: "var(--font-body)",
                   fontWeight: "var(--font-weight-body-heavy)",
                   color: "hsl(var(--celo-black))",
-                  textTransform: "uppercase",
+                  textTransform: isMiniApp && farcasterUser ? "none" : "uppercase",
                   fontSize: "0.75rem",
                   letterSpacing: "0.02em"
                 }}>
-                  {address.slice(0, 6)}...{address.slice(-4)}
+                  {isMiniApp && farcasterUser
+                    ? `@${farcasterUser.username}`
+                    : `${address.slice(0, 6)}...${address.slice(-4)}`
+                  }
                 </span>
               </div>
               {chain && (
@@ -293,11 +334,13 @@ function GlobalHeader({
         </motion.div>
       </motion.div>
 
-      {/* Wallet Modal for browser users */}
-      <WalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-      />
+      {/* Wallet Modal for browser users - don't show in Farcaster Mini App */}
+      {!isMiniApp && (
+        <WalletModal
+          isOpen={isWalletModalOpen}
+          onClose={() => setIsWalletModalOpen(false)}
+        />
+      )}
     </header>
   );
 }

@@ -28,10 +28,10 @@ const getFarcasterProfile = async (address: string): Promise<FarcasterProfile | 
     }
 
     const response = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
+      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}&address_types=custody_address,verified_address`,
       {
         headers: {
-          'api_key': apiKey,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json',
         },
       }

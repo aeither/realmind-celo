@@ -25,7 +25,7 @@ Realmind creates a gamified learn-to-earn ecosystem on Celo where users:
 - **Frontend**: React 18, TypeScript, TanStack Router, Tailwind CSS 4
 - **Blockchain**: Wagmi, Viem, OnchainKit
 - **Identity**: Self Protocol (privacy-preserving verification)
-- **Social**: Farcaster MiniApp SDK
+- **Social**: Farcaster integration via Neynar API (see [FARCASTER_INTEGRATION.md](./FARCASTER_INTEGRATION.md))
 - **Referral Tracking**: Divvi Referral SDK
 - **Smart Contracts**: Multiple quiz game contracts with reward distribution
 - **State**: TanStack Query, Socket.io
@@ -36,12 +36,38 @@ Realmind creates a gamified learn-to-earn ecosystem on Celo where users:
 # Install dependencies
 pnpm install
 
+# Configure environment variables
+# Create .env file with required keys (see Configuration section)
+cp .env.example .env
+
 # Start dev server
 pnpm dev
 
 # Build for production
 pnpm build
 ```
+
+## Configuration
+
+### Frontend Environment Variables
+
+Create a `.env` file in the root directory:
+
+```bash
+# Neynar API for Farcaster profiles (get at https://neynar.com)
+VITE_NEYNAR_API_KEY=your_neynar_api_key
+
+# Backend URL (optional, defaults to localhost)
+VITE_BACKEND_URL=http://localhost:3000
+```
+
+### Backend Environment Variables
+
+See [backend/README.md](./backend/README.md) for backend configuration including Neynar API key setup.
+
+### Farcaster Integration
+
+The app displays Farcaster usernames instead of wallet addresses when available. See [FARCASTER_INTEGRATION.md](./FARCASTER_INTEGRATION.md) for detailed setup and implementation guide.
 
 ## Smart Contracts
 

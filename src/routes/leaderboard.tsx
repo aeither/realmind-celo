@@ -33,7 +33,7 @@ function LeaderboardPage() {
         chain.id,
         rewardsConfig.maxWinners
       )
-
+      console.log('Leaderboard result:', result)
       if (result.success && result.holders) {
         setHolders(result.holders)
         setTotalHolders(result.totalHolders || 0)
@@ -589,27 +589,59 @@ function LeaderboardPage() {
                               fontWeight: "600",
                               color: "white"
                             }}>
-                              {holder.address.slice(2, 4).toUpperCase()}
+                              {holder.farcasterUsername ? '🟣' : holder.address.slice(2, 4).toUpperCase()}
                             </div>
-                            <code 
-                              style={{
-                                background: address?.toLowerCase() === holder.address.toLowerCase() ? "#dbeafe" : "#f9fafb",
-                                padding: "0.2rem 0.4rem",
-                                borderRadius: "4px",
-                                fontSize: "0.7rem",
-                                fontFamily: "monospace",
-                                display: "block",
-                                maxWidth: "100%",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                border: address?.toLowerCase() === holder.address.toLowerCase() ? "1px solid #3b82f6" : "none",
-                                cursor: "pointer"
-                              }}
-                              onClick={() => navigator.clipboard.writeText(holder.address)}
-                              title="Click to copy address"
-                            >
-                              {leaderboardService.truncateAddress(holder.address)}
-                            </code>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+                              {holder.farcasterUsername ? (
+                                <>
+                                  <span style={{
+                                    background: address?.toLowerCase() === holder.address.toLowerCase() ? "#dbeafe" : "#f9fafb",
+                                    padding: "0.2rem 0.4rem",
+                                    borderRadius: "4px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "600",
+                                    color: "#7c3aed",
+                                    border: address?.toLowerCase() === holder.address.toLowerCase() ? "1px solid #3b82f6" : "1px solid #e5e7eb",
+                                  }}>
+                                    @{holder.farcasterUsername}
+                                  </span>
+                                  <code
+                                    style={{
+                                      background: "transparent",
+                                      padding: "0 0.4rem",
+                                      fontSize: "0.6rem",
+                                      fontFamily: "monospace",
+                                      color: "#9ca3af",
+                                      cursor: "pointer"
+                                    }}
+                                    onClick={() => navigator.clipboard.writeText(holder.address)}
+                                    title="Click to copy address"
+                                  >
+                                    {leaderboardService.truncateAddress(holder.address)}
+                                  </code>
+                                </>
+                              ) : (
+                                <code
+                                  style={{
+                                    background: address?.toLowerCase() === holder.address.toLowerCase() ? "#dbeafe" : "#f9fafb",
+                                    padding: "0.2rem 0.4rem",
+                                    borderRadius: "4px",
+                                    fontSize: "0.7rem",
+                                    fontFamily: "monospace",
+                                    display: "block",
+                                    maxWidth: "100%",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    border: address?.toLowerCase() === holder.address.toLowerCase() ? "1px solid #3b82f6" : "none",
+                                    cursor: "pointer"
+                                  }}
+                                  onClick={() => navigator.clipboard.writeText(holder.address)}
+                                  title="Click to copy address"
+                                >
+                                  {leaderboardService.truncateAddress(holder.address)}
+                                </code>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td style={{ padding: "0.5rem", textAlign: "right" }}>
