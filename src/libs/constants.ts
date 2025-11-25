@@ -36,7 +36,7 @@ const REWARDS_CONFIG = {
     totalReward: 0,
     currency: "CELO",
     symbol: "🟡",
-    maxWinners: 10,
+    maxWinners: 30,
     seasonEndDate: undefined // Celo season ends December 31, 2025
     // totalReward: 250,
     // currency: "CELO",
