@@ -4,7 +4,6 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '../components/ui/Button';
 import GlobalHeader from '../components/GlobalHeader';
 import BottomNavigation from '../components/BottomNavigation';
-import { SelfVerification } from '../components/SelfVerification';
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -65,13 +64,6 @@ function ProfilePage() {
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSelfVerification, setShowSelfVerification] = useState(false);
-  const [selfVerificationStatus, setSelfVerificationStatus] = useState<{
-    verified: boolean;
-    data?: any;
-  }>({
-    verified: false,
-  });
 
   useEffect(() => {
     if (isConnected && address) {
@@ -100,15 +92,6 @@ function ProfilePage() {
     } else if (connectors[0]) {
       connect({ connector: connectors[0] });
     }
-  };
-
-  const handleSelfVerificationSuccess = (data: any) => {
-    console.log('Verification successful:', data);
-    setSelfVerificationStatus({
-      verified: true,
-      data: data,
-    });
-    setShowSelfVerification(false);
   };
 
   if (!isConnected) {
@@ -397,77 +380,13 @@ function ProfilePage() {
                   Verify your identity with Self Protocol
                 </p>
               </div>
-              {selfVerificationStatus.verified && (
-                <div className="flex items-center gap-2 px-4 py-2" style={{
-                  background: 'hsl(var(--celo-green) / 0.2)',
-                  border: 'var(--outline-thin)'
-                }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    style={{ color: 'hsl(var(--celo-green))' }}
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="font-semibold" style={{ color: 'hsl(var(--celo-green))' }}>Verified</span>
-                </div>
-              )}
-            </div>
-
-            {!selfVerificationStatus.verified && !showSelfVerification && (
-              <Button
-                onClick={() => setShowSelfVerification(true)}
-                className="btn-industrial"
-                style={{
-                  background: 'hsl(var(--primary))',
-                  color: 'hsl(var(--celo-white))',
-                }}
-              >
-                Start Verification
-              </Button>
-            )}
-
-            {showSelfVerification && !selfVerificationStatus.verified && address && (
-              <div className="mt-6 p-6" style={{
+              <div className="flex items-center gap-2 px-4 py-2" style={{
                 background: 'hsl(var(--celo-tan-2))',
-                border: 'var(--outline-medium)'
-              }}>
-                <SelfVerification
-                  userId={address}
-                  onVerificationSuccess={handleSelfVerificationSuccess}
-                />
-                <Button
-                  onClick={() => setShowSelfVerification(false)}
-                  className="btn-industrial mt-4"
-                  style={{
-                    background: 'hsl(var(--celo-white))',
-                    color: 'hsl(var(--celo-black))',
-                    width: '100%'
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-
-            {selfVerificationStatus.verified && (
-              <div className="mt-4 p-4" style={{
-                background: 'hsl(var(--celo-green) / 0.1)',
                 border: 'var(--outline-thin)'
               }}>
-                <h3 className="font-semibold mb-2" style={{ color: 'hsl(var(--celo-black))' }}>Verification Complete!</h3>
-                <p className="text-sm" style={{ color: 'hsl(var(--celo-brown))' }}>
-                  Your identity has been verified with Self Protocol.
-                  Verified on: {new Date(selfVerificationStatus.data?.timestamp || Date.now()).toLocaleString()}
-                </p>
+                <span className="font-semibold" style={{ color: 'hsl(var(--celo-brown))' }}>COMING SOON</span>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Disconnect Button */}
