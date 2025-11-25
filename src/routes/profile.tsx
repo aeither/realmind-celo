@@ -363,7 +363,7 @@ function ProfilePage() {
           </div>
 
           {/* Self Protocol Verification Section */}
-          <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
+          {/* <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-body-black" style={{ 
@@ -387,7 +387,7 @@ function ProfilePage() {
                 <span className="font-semibold" style={{ color: 'hsl(var(--celo-brown))' }}>COMING SOON</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Disconnect Button */}
           <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
