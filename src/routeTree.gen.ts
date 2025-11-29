@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SwapRouteImport } from './routes/swap'
 import { Route as QuizGameRouteImport } from './routes/quiz-game'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
@@ -20,6 +21,11 @@ import { Route as BackendDemoRouteImport } from './routes/backend-demo'
 import { Route as AiQuizRouteImport } from './routes/ai-quiz'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SwapRoute = SwapRouteImport.update({
+  id: '/swap',
+  path: '/swap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuizGameRoute = QuizGameRouteImport.update({
   id: '/quiz-game',
   path: '/quiz-game',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
+  '/swap': typeof SwapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
+  '/swap': typeof SwapRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/quiz-game': typeof QuizGameRoute
+  '/swap': typeof SwapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/profile'
     | '/quiz-game'
+    | '/swap'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/profile'
     | '/quiz-game'
+    | '/swap'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/profile'
     | '/quiz-game'
+    | '/swap'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,10 +170,18 @@ export interface RootRouteChildren {
   LeaderboardRoute: typeof LeaderboardRoute
   ProfileRoute: typeof ProfileRoute
   QuizGameRoute: typeof QuizGameRoute
+  SwapRoute: typeof SwapRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/swap': {
+      id: '/swap'
+      path: '/swap'
+      fullPath: '/swap'
+      preLoaderRoute: typeof SwapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quiz-game': {
       id: '/quiz-game'
       path: '/quiz-game'
@@ -246,6 +266,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeaderboardRoute: LeaderboardRoute,
   ProfileRoute: ProfileRoute,
   QuizGameRoute: QuizGameRoute,
+  SwapRoute: SwapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

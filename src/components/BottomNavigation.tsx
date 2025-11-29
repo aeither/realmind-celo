@@ -12,6 +12,12 @@ export default function BottomNavigation() {
       path: '/'
     },
     {
+      id: 'swap',
+      label: 'Swap',
+      icon: '🔄',
+      path: '/swap'
+    },
+    {
       id: 'leaderboard',
       label: 'Ranks',
       icon: '🏆',
@@ -22,13 +28,7 @@ export default function BottomNavigation() {
       label: 'Profile',
       icon: '👤',
       path: '/profile'
-    },
-    // {
-    //   id: 'ai-quiz',
-    //   label: 'AI Quiz',
-    //   icon: '🤖',
-    //   path: '/ai-quiz'
-    // }
+    }
   ]
 
   const isActive = (path: string) => location.pathname === path
