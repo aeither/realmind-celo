@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState, useCallback } from 'react'
-import { useAccount, useWalletClient, useSwitchChain } from 'wagmi'
+import { useAccount, useWalletClient, useSwitchChain, useBalance } from 'wagmi'
 import { createConfig as createLiFiConfig, getChains, getTokens, getQuote, executeRoute, convertQuoteToRoute, EVM, type Token, type ExtendedChain, type QuoteRequest, type RouteExtended } from '@lifi/sdk'
-import { parseUnits, formatUnits } from 'viem'
+import { parseUnits, formatUnits, erc20Abi } from 'viem'
+import { useReadContract } from 'wagmi'
 import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
 
@@ -55,6 +56,13 @@ function SwapPage() {
   const [toTokenSearch, setToTokenSearch] = useState('')
   const [showFromTokenDropdown, setShowFromTokenDropdown] = useState(false)
   const [showToTokenDropdown, setShowToTokenDropdown] = useState(false)
+  
+  // Token balance state
+  const [fromTokenBalance, setFromTokenBalance] = useState<string>('0')
+  const [loadingBalance, setLoadingBalance] = useState(false)
+  
+  // Chain switching state
+  const [needsChainSwitch, setNeedsChainSwitch] = useState(false)
 
   // Initialize LI.FI SDK and load chains
   useEffect(() => {
@@ -118,6 +126,58 @@ function SwapPage() {
       })
     }
   }, [walletClient, switchChain])
+
+  // Check if chain switch is needed
+  useEffect(() => {
+    if (chain && fromChainId && chain.id !== fromChainId) {
+      setNeedsChainSwitch(true)
+    } else {
+      setNeedsChainSwitch(false)
+    }
+  }, [chain, fromChainId])
+
+  // Fetch native token balance (only when on correct chain)
+  const { data: nativeBalance } = useBalance({
+    address: address,
+    chainId: fromChainId as 8453 | 42220 | 41923 | undefined,
+    query: {
+      enabled: !!address && !!fromChainId && fromToken?.address === '0x0000000000000000000000000000000000000000' && chain?.id === fromChainId,
+      refetchInterval: 10000,
+    }
+  })
+
+  // Fetch ERC20 token balance (only when on correct chain)
+  const { data: erc20Balance } = useReadContract({
+    address: fromToken?.address as `0x${string}`,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: fromChainId as 8453 | 42220 | 41923 | undefined,
+    query: {
+      enabled: !!address && !!fromToken && fromToken.address !== '0x0000000000000000000000000000000000000000' && !!fromChainId && chain?.id === fromChainId,
+      refetchInterval: 10000,
+    }
+  })
+
+  // Update balance when token changes
+  useEffect(() => {
+    if (!fromToken || !address) {
+      setFromTokenBalance('0')
+      return
+    }
+
+    if (fromToken.address === '0x0000000000000000000000000000000000000000') {
+      // Native token
+      if (nativeBalance) {
+        setFromTokenBalance(formatUnits(nativeBalance.value, nativeBalance.decimals))
+      }
+    } else {
+      // ERC20 token
+      if (erc20Balance !== undefined) {
+        setFromTokenBalance(formatUnits(erc20Balance as bigint, fromToken.decimals))
+      }
+    }
+  }, [fromToken, address, nativeBalance, erc20Balance])
 
   // Load tokens when chain changes
   useEffect(() => {
@@ -269,6 +329,41 @@ function SwapPage() {
     setToToken(tempToken)
   }
 
+  // Handle chain switch for swap
+  const handleChainSwitch = async () => {
+    if (fromChainId && chain?.id !== fromChainId) {
+      try {
+        switchChain({ chainId: fromChainId as 8453 | 42220 | 41923 })
+      } catch (err) {
+        console.error('Failed to switch chain:', err)
+      }
+    }
+  }
+
+  // Set amount by percentage
+  const setAmountByPercentage = (percentage: number) => {
+    if (!fromTokenBalance || parseFloat(fromTokenBalance) <= 0) return
+    
+    const balance = parseFloat(fromTokenBalance)
+    let newAmount: number
+    
+    if (percentage === 100) {
+      // For MAX, leave a small amount for gas on native tokens
+      if (fromToken?.address === '0x0000000000000000000000000000000000000000') {
+        newAmount = Math.max(0, balance - 0.01) // Reserve 0.01 for gas
+      } else {
+        newAmount = balance
+      }
+    } else {
+      newAmount = balance * (percentage / 100)
+    }
+    
+    // Format with appropriate decimals
+    const decimals = fromToken?.decimals || 18
+    const formatted = newAmount.toFixed(Math.min(decimals, 8))
+    setAmount(formatted.replace(/\.?0+$/, '')) // Remove trailing zeros
+  }
+
   // Filter tokens based on search
   const getFilteredTokens = (chainId: number | null, search: string) => {
     if (!chainId || !tokens[chainId]) return []
@@ -350,6 +445,39 @@ function SwapPage() {
             </div>
           ) : (
             <>
+              {/* Chain Switch Warning */}
+              {needsChainSwitch && fromChainId && (
+                <div style={{
+                  background: "hsl(var(--celo-yellow))",
+                  border: "2px solid hsl(var(--celo-black))",
+                  padding: "0.75rem",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.5rem"
+                }}>
+                  <span className="text-body-heavy" style={{ fontSize: "0.8rem" }}>
+                    ⚠️ Switch to {chains.find(c => c.id === fromChainId)?.name || 'selected chain'} to swap
+                  </span>
+                  <button
+                    onClick={handleChainSwitch}
+                    style={{
+                      background: "hsl(var(--celo-black))",
+                      color: "hsl(var(--celo-yellow))",
+                      border: "none",
+                      padding: "0.4rem 0.8rem",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      textTransform: "uppercase"
+                    }}
+                  >
+                    Switch
+                  </button>
+                </div>
+              )}
+
               {/* From Section */}
               <div style={{ marginBottom: "1rem" }}>
                 <label className="text-body-black" style={{
@@ -368,6 +496,7 @@ function SwapPage() {
                   onChange={(e) => {
                     setFromChainId(Number(e.target.value))
                     setFromToken(null)
+                    setFromTokenBalance('0')
                   }}
                   style={{
                     width: "100%",
@@ -499,6 +628,62 @@ function SwapPage() {
                     }}
                   />
                 </div>
+
+                {/* Balance Display & Percentage Buttons */}
+                {fromToken && isConnected && (
+                  <div style={{ 
+                    marginTop: "0.5rem", 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "0.5rem"
+                  }}>
+                    <div style={{ 
+                      fontSize: "0.75rem", 
+                      color: "hsl(var(--celo-brown))",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem"
+                    }}>
+                      <span>Balance:</span>
+                      <span style={{ fontWeight: "bold", color: "hsl(var(--celo-black))" }}>
+                        {parseFloat(fromTokenBalance).toFixed(4)} {fromToken.symbol}
+                      </span>
+                    </div>
+                    
+                    {/* Percentage Buttons */}
+                    <div style={{ display: "flex", gap: "0.25rem" }}>
+                      {[25, 50, 75, 100].map((pct) => (
+                        <button
+                          key={pct}
+                          onClick={() => setAmountByPercentage(pct)}
+                          disabled={parseFloat(fromTokenBalance) <= 0}
+                          style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.7rem",
+                            fontWeight: "bold",
+                            border: "2px solid hsl(var(--celo-black))",
+                            background: "hsl(var(--celo-tan-2))",
+                            cursor: parseFloat(fromTokenBalance) > 0 ? "pointer" : "not-allowed",
+                            opacity: parseFloat(fromTokenBalance) > 0 ? 1 : 0.5,
+                            transition: "var(--transition-fast)"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (parseFloat(fromTokenBalance) > 0) {
+                              e.currentTarget.style.background = "hsl(var(--celo-yellow))"
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "hsl(var(--celo-tan-2))"
+                          }}
+                        >
+                          {pct === 100 ? 'MAX' : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Swap Direction Button */}
@@ -771,29 +956,29 @@ function SwapPage() {
 
               {/* Swap Button */}
               <button
-                onClick={handleSwap}
-                disabled={!isConnected || !quote || executing || loadingQuote}
+                onClick={needsChainSwitch ? handleChainSwitch : handleSwap}
+                disabled={!isConnected || (!quote && !needsChainSwitch) || executing || loadingQuote}
                 style={{
                   width: "100%",
                   padding: "1rem",
                   border: "3px solid hsl(var(--celo-black))",
-                  background: (!isConnected || !quote || executing || loadingQuote) 
-                    ? "hsl(var(--celo-tan-2))" 
+                  background: (!isConnected || ((!quote || needsChainSwitch) && !needsChainSwitch) || executing || loadingQuote) 
+                    ? needsChainSwitch ? "hsl(var(--celo-yellow))" : "hsl(var(--celo-tan-2))" 
                     : "hsl(var(--celo-green))",
-                  color: (!isConnected || !quote || executing || loadingQuote) 
-                    ? "hsl(var(--celo-brown))" 
+                  color: (!isConnected || (!quote && !needsChainSwitch) || executing || loadingQuote) 
+                    ? "hsl(var(--celo-black))" 
                     : "hsl(var(--celo-black))",
                   fontSize: "1.1rem",
                   fontFamily: "var(--font-body)",
                   fontWeight: "var(--font-weight-body-black)",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  cursor: (!isConnected || !quote || executing || loadingQuote) ? "not-allowed" : "pointer",
+                  cursor: (!isConnected || (!quote && !needsChainSwitch) || executing || loadingQuote) ? "not-allowed" : "pointer",
                   boxShadow: "4px 4px 0px hsl(var(--celo-black))",
                   transition: "var(--transition-fast)"
                 }}
                 onMouseEnter={(e) => {
-                  if (isConnected && quote && !executing && !loadingQuote) {
+                  if ((isConnected && quote && !executing && !loadingQuote) || needsChainSwitch) {
                     e.currentTarget.style.transform = "translateY(-2px)"
                     e.currentTarget.style.boxShadow = "6px 6px 0px hsl(var(--celo-black))"
                   }
@@ -804,6 +989,7 @@ function SwapPage() {
                 }}
               >
                 {!isConnected ? 'Connect Wallet' : 
+                 needsChainSwitch ? `Switch to ${chains.find(c => c.id === fromChainId)?.name || 'Chain'}` :
                  executing ? 'Swapping...' : 
                  loadingQuote ? 'Getting Quote...' :
                  !quote ? 'Enter Amount' : 

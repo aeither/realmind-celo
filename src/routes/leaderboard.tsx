@@ -8,6 +8,15 @@ import { getContractAddresses, getRewardsConfig } from '../libs/constants'
 import { seasonRewardABI } from '../abis/seasonRewardABI'
 import { formatEther } from 'viem'
 
+// Format date nicely
+const formatEndDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
 function LeaderboardPage() {
   const { chain, address } = useAccount()
   const navigate = useNavigate()
@@ -217,6 +226,91 @@ function LeaderboardPage() {
                 <span>{daysRemaining} days left</span>
               </div>
             )}
+            
+            {/* How It Works Section */}
+            <div style={{
+              marginTop: '1.5rem',
+              background: 'hsl(var(--celo-white))',
+              border: '3px solid hsl(var(--celo-black))',
+              padding: '1.25rem',
+              textAlign: 'left',
+              maxWidth: '600px',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              boxShadow: '3px 3px 0px hsl(var(--celo-black))'
+            }}>
+              <h3 style={{
+                margin: '0 0 1rem 0',
+                fontSize: '1rem',
+                textTransform: 'uppercase',
+                fontWeight: 'var(--font-weight-body-black)',
+                color: 'hsl(var(--celo-black))',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span>📖</span> How It Works
+              </h3>
+              <div style={{ fontSize: '0.85rem', lineHeight: '1.6', color: 'hsl(var(--celo-brown))' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <span style={{ 
+                    background: 'hsl(var(--celo-green))', 
+                    color: 'white', 
+                    borderRadius: '50%', 
+                    width: '24px', 
+                    height: '24px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold'
+                  }}>1</span>
+                  <span><strong>Play quizzes</strong> to earn XP tokens during the competition period</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <span style={{ 
+                    background: 'hsl(var(--celo-yellow))', 
+                    color: 'hsl(var(--celo-black))', 
+                    borderRadius: '50%', 
+                    width: '24px', 
+                    height: '24px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold'
+                  }}>2</span>
+                  <span><strong>Climb the leaderboard</strong> — top {rewardsConfig.maxWinners} players share the {rewardsConfig.totalReward} {rewardsConfig.currency} prize pool</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <span style={{ 
+                    background: 'hsl(var(--celo-purple))', 
+                    color: 'white', 
+                    borderRadius: '50%', 
+                    width: '24px', 
+                    height: '24px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold'
+                  }}>3</span>
+                  <span><strong>Claim rewards</strong> after {rewardsConfig.seasonEndDate ? formatEndDate(rewardsConfig.seasonEndDate) : 'the competition ends'} — proportional to your XP share</span>
+                </div>
+              </div>
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: 'hsl(var(--celo-tan-2))',
+                border: '2px solid hsl(var(--celo-black))',
+                fontSize: '0.8rem'
+              }}>
+                <strong>💡 Pro tip:</strong> The more XP you earn, the larger your share of the prize pool!
+              </div>
+            </div>
           </div>
           
           {/* Stats Cards */}
