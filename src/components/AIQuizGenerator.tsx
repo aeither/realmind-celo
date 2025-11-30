@@ -46,7 +46,15 @@ export default function AIQuizGenerator({ className = '' }: AIQuizGeneratorProps
   });
 
   const handleTopicSelect = (topic: string) => {
-    setFormData(prev => ({ ...prev, topic }));
+    // Remove special characters when selecting from popular topics
+    const sanitizedTopic = topic.replace(/[&,\-]/g, '');
+    setFormData(prev => ({ ...prev, topic: sanitizedTopic }));
+  };
+
+  const handleTopicChange = (value: string) => {
+    // Remove special characters: &, ,, -
+    const sanitizedValue = value.replace(/[&,\-]/g, '');
+    setFormData(prev => ({ ...prev, topic: sanitizedValue }));
   };
 
   const handleGenerateQuiz = async () => {
@@ -137,7 +145,7 @@ export default function AIQuizGenerator({ className = '' }: AIQuizGeneratorProps
             <input
               type="text"
               value={formData.topic}
-              onChange={(e) => setFormData(prev => ({ ...prev, topic: e.target.value }))}
+              onChange={(e) => handleTopicChange(e.target.value)}
               placeholder="Enter any topic (e.g., 'Bitcoin for beginners', 'Advanced DeFi strategies')"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all duration-200"
             />

@@ -12,6 +12,12 @@ function BackendDemo() {
   const [response, setResponse] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [topicInput, setTopicInput] = useState<string>('')
+
+  const handleTopicInputChange = (value: string) => {
+    // Remove special characters: &, ,, -
+    const sanitizedValue = value.replace(/[&,\-]/g, '');
+    setTopicInput(sanitizedValue);
+  };
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null)
   const [quizCreatedAt, setQuizCreatedAt] = useState<string | null>(null)
   const [currentQuizTitle, setCurrentQuizTitle] = useState<string>('')
@@ -305,7 +311,7 @@ function BackendDemo() {
                   <input
                     type="text"
                     value={topicInput}
-                    onChange={(e) => setTopicInput(e.target.value)}
+                    onChange={(e) => handleTopicInputChange(e.target.value)}
                     placeholder="Enter quiz topic..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />

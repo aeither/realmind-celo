@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '../components/ui/Button';
 import GlobalHeader from '../components/GlobalHeader';
 import BottomNavigation from '../components/BottomNavigation';
+import { useFarcaster } from '../contexts/FarcasterContext';
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -16,6 +17,7 @@ type FarcasterProfile = {
   bio: string;
   followerCount?: number;
   followingCount?: number;
+  fid?: number;
 };
 
 const getFarcasterProfile = async (address: string): Promise<FarcasterProfile | null> => {
@@ -49,6 +51,7 @@ const getFarcasterProfile = async (address: string): Promise<FarcasterProfile | 
       bio: data.profile.bio || '',
       followerCount: data.profile.followerCount,
       followingCount: data.profile.followingCount,
+      fid: data.profile.fid,
     };
   } catch (err) {
     console.error('Error fetching Farcaster profile:', err);
@@ -60,10 +63,20 @@ function ProfilePage() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const { 
+    isMiniApp, 
+    isAdded, 
+    addMiniApp, 
+    composeCast, 
+    neynarScore, 
+    fetchNeynarScore, 
+    isLoadingScore 
+  } = useFarcaster();
 
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddPrompt, setShowAddPrompt] = useState(false);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -73,8 +86,12 @@ function ProfilePage() {
         .then((data) => {
           setProfile(data);
           setLoading(false);
+          // Fetch Neynar score if we have a profile with FID
+          if (data?.fid) {
+            fetchNeynarScore();
+          }
         })
-        .catch((err) => {
+        .catch(() => {
           setError('Failed to load profile');
           setProfile(null);
           setLoading(false);
@@ -83,7 +100,33 @@ function ProfilePage() {
       setProfile(null);
       setError(null);
     }
-  }, [address, isConnected]);
+  }, [address, isConnected, fetchNeynarScore]);
+
+  // Show add mini app prompt after a delay if not added
+  useEffect(() => {
+    if (isMiniApp && !isAdded && profile) {
+      const timer = setTimeout(() => setShowAddPrompt(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isMiniApp, isAdded, profile]);
+
+  const handleAddMiniApp = async () => {
+    const success = await addMiniApp();
+    if (success) {
+      setShowAddPrompt(false);
+    }
+  };
+
+  const handleShareScore = () => {
+    const score = neynarScore?.neynarUserScore || 0;
+    const username = profile?.username || 'learner';
+    const scorePercent = Math.round(score * 100);
+    
+    const shareText = `🧠 My Neynar Score: ${scorePercent}%\n\n@${username} on Realmind - Test your knowledge and earn rewards!\n\nPlay now:`;
+    const embedUrl = 'https://realmind-celo.dailywiser.xyz';
+    
+    composeCast(shareText, embedUrl);
+  };
 
   const handleConnect = () => {
     const farcasterConnector = connectors.find((c) => c.name.toLowerCase().includes('farcaster'));
@@ -323,6 +366,182 @@ function ProfilePage() {
               )}
             </div>
           </div>
+
+          {/* Neynar Score Section */}
+          {profile && (
+            <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginTop: '2rem' }}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-body-black" style={{ 
+                  color: 'hsl(var(--celo-black))',
+                  fontSize: '1.5rem',
+                  textTransform: 'uppercase'
+                }}>Reputation Score</h2>
+                <Button
+                  onClick={handleShareScore}
+                  className="btn-industrial"
+                  style={{
+                    background: 'hsl(var(--celo-purple))',
+                    color: 'hsl(var(--celo-white))',
+                    fontSize: '0.85rem',
+                    padding: '0.5rem 1rem',
+                    textTransform: 'uppercase',
+                    border: '2px solid hsl(var(--celo-black))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  Share Score
+                </Button>
+              </div>
+              
+              {isLoadingScore ? (
+                <div className="color-block p-4" style={{
+                  background: 'hsl(var(--celo-tan-2))',
+                  border: '3px solid hsl(var(--celo-black))',
+                  textAlign: 'center'
+                }}>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderColor: 'hsl(var(--celo-purple))' }}></div>
+                  <p style={{ color: 'hsl(var(--celo-brown))', marginTop: '0.5rem', fontSize: '0.9rem' }}>Loading score...</p>
+                </div>
+              ) : neynarScore ? (
+                <div className="color-block p-4" style={{
+                  background: 'linear-gradient(135deg, hsl(var(--celo-tan-2)), hsl(var(--celo-white)))',
+                  border: '3px solid hsl(var(--celo-black))',
+                  padding: '1.5rem'
+                }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-body-heavy" style={{ 
+                        color: 'hsl(var(--celo-brown))',
+                        textTransform: 'uppercase',
+                        fontSize: '0.8rem',
+                        marginBottom: '0.5rem'
+                      }}>Neynar User Score</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-body-black" style={{ 
+                          color: 'hsl(var(--celo-purple))',
+                          fontSize: '2.5rem'
+                        }}>{Math.round(neynarScore.neynarUserScore * 100)}%</span>
+                      </div>
+                    </div>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      background: `conic-gradient(hsl(var(--celo-purple)) ${neynarScore.neynarUserScore * 360}deg, hsl(var(--celo-tan-2)) 0deg)`,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '3px solid hsl(var(--celo-black))'
+                    }}>
+                      <div style={{
+                        width: '60px',
+                        height: '60px',
+                        background: 'hsl(var(--celo-white))',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <span style={{ fontSize: '1.5rem' }}>🧠</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{ 
+                    color: 'hsl(var(--celo-brown))',
+                    fontSize: '0.85rem',
+                    marginTop: '1rem'
+                  }}>
+                    Your reputation score on Farcaster. Higher scores unlock exclusive features!
+                  </p>
+                </div>
+              ) : (
+                <div className="color-block p-4" style={{
+                  background: 'hsl(var(--celo-tan-2))',
+                  border: '3px solid hsl(var(--celo-black))',
+                  padding: '1.5rem',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ color: 'hsl(var(--celo-brown))' }}>Score not available</p>
+                  <Button
+                    onClick={() => fetchNeynarScore()}
+                    className="btn-industrial mt-2"
+                    style={{
+                      background: 'hsl(var(--celo-black))',
+                      color: 'hsl(var(--celo-white))',
+                      fontSize: '0.85rem',
+                      padding: '0.5rem 1rem'
+                    }}
+                  >
+                    Refresh Score
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Add Mini App Prompt */}
+          {showAddPrompt && isMiniApp && !isAdded && (
+            <div style={{ 
+              borderTop: '3px solid hsl(var(--celo-black))', 
+              paddingTop: '2rem', 
+              marginTop: '2rem'
+            }}>
+              <div className="color-block" style={{
+                background: 'linear-gradient(135deg, hsl(var(--celo-yellow)), hsl(var(--celo-pink)))',
+                border: '3px solid hsl(var(--celo-black))',
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <h3 className="text-body-black" style={{ 
+                  color: 'hsl(var(--celo-black))',
+                  fontSize: '1.2rem',
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase'
+                }}>🔔 Enable Notifications</h3>
+                <p style={{ 
+                  color: 'hsl(var(--celo-black))',
+                  fontSize: '0.9rem',
+                  marginBottom: '1rem',
+                  opacity: 0.8
+                }}>
+                  Add Realmind to get daily quiz reminders and leaderboard updates!
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={handleAddMiniApp}
+                    className="btn-primary-industrial"
+                    style={{
+                      fontSize: '0.9rem',
+                      padding: '0.75rem 1.5rem'
+                    }}
+                  >
+                    Add Realmind
+                  </Button>
+                  <Button
+                    onClick={() => setShowAddPrompt(false)}
+                    style={{
+                      background: 'transparent',
+                      color: 'hsl(var(--celo-black))',
+                      fontSize: '0.9rem',
+                      padding: '0.75rem 1rem',
+                      border: '2px solid hsl(var(--celo-black))'
+                    }}
+                  >
+                    Later
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Wallet Info */}
           <div style={{ borderTop: '3px solid hsl(var(--celo-black))', paddingTop: '2rem', marginBottom: '2rem', marginTop: '2rem' }}>

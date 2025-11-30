@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface GamifiedEndScreenProps {
   score: number;
@@ -8,6 +9,7 @@ interface GamifiedEndScreenProps {
   onExit: () => void;
   isClaiming?: boolean;
   transactionHash?: string;
+  quizTitle?: string;
 }
 
 function GamifiedEndScreen({ 
@@ -17,18 +19,46 @@ function GamifiedEndScreen({
   onPlayAgain, 
   onExit,
   isClaiming = false,
-  transactionHash
+  transactionHash,
+  quizTitle = 'Quiz'
 }: GamifiedEndScreenProps) {
   const [showBox, setShowBox] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isOpened, setIsOpened] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [isMiniApp, setIsMiniApp] = useState(false);
 
   const percentage = Math.round((score / totalQuestions) * 100);
   const pointsEarned = score * 10;
   const bonusMultiplier = percentage >= 80 ? 2 : percentage >= 60 ? 1.5 : 1;
   const totalPoints = Math.floor(pointsEarned * bonusMultiplier);
+
+  // Check if we're in mini app
+  useEffect(() => {
+    sdk.isInMiniApp().then(setIsMiniApp).catch(() => setIsMiniApp(false));
+  }, []);
+
+  // Share results to Farcaster
+  const handleShare = useCallback(async () => {
+    const emoji = percentage >= 90 ? "🏆" : percentage >= 80 ? "🥇" : percentage >= 70 ? "🥈" : percentage >= 60 ? "🥉" : "📚";
+    const shareText = `${emoji} I scored ${score}/${totalQuestions} (${percentage}%) on ${quizTitle}!\n\nCan you beat my score? 🧠\n\nPlay now:`;
+    const embedUrl = 'https://realmind-celo.dailywiser.xyz';
+
+    if (isMiniApp) {
+      try {
+        await sdk.actions.composeCast({
+          text: shareText,
+          embeds: [embedUrl],
+        });
+      } catch (error) {
+        // Fallback to Warpcast compose URL
+        window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`, '_blank');
+      }
+    } else {
+      window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(embedUrl)}`, '_blank');
+    }
+  }, [score, totalQuestions, percentage, quizTitle, isMiniApp]);
 
   // Animation sequence
   useEffect(() => {
@@ -305,38 +335,65 @@ function GamifiedEndScreen({
           )}
 
           {hasClaimed && (
-            <button
-              onClick={onPlayAgain}
-              style={{
-                backgroundColor: "#0ea5e9",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                padding: "1rem 2rem",
-                fontSize: "1.1rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 4px 6px rgba(14, 165, 233, 0.3)",
-                transition: "all 0.3s ease"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0284c7";
-                e.currentTarget.style.transform = "translateY(-2px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#0ea5e9";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              🔄 Play Again
-            </button>
+            <>
+              <button
+                onClick={handleShare}
+                style={{
+                  backgroundColor: "#8B5CF6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "1rem 2rem",
+                  fontSize: "1.1rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 6px rgba(139, 92, 246, 0.3)",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#7C3AED";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#8B5CF6";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                📢 Share Score
+              </button>
+              <button
+                onClick={onPlayAgain}
+                style={{
+                  backgroundColor: "#0ea5e9",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "1rem 2rem",
+                  fontSize: "1.1rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 6px rgba(14, 165, 233, 0.3)",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#0284c7";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#0ea5e9";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                🔄 Play Again
+              </button>
+            </>
           )}
 
           <button
             onClick={onExit}
             style={{
               backgroundColor: "#e5e7eb",
-              color: "white",
+              color: "#374151",
               border: "none",
               borderRadius: "12px",
               padding: "1rem 2rem",

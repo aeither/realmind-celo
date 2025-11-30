@@ -1,31 +1,40 @@
 {
   "frame": {
-    "name": "Realmind",
     "version": "1",
+    "name": "Realmind",
     "iconUrl": "https://realmind-celo.dailywiser.xyz/icon.png",
     "homeUrl": "https://realmind-celo.dailywiser.xyz",
     "imageUrl": "https://realmind-celo.dailywiser.xyz/realmind-banner.png",
     "splashImageUrl": "https://realmind-celo.dailywiser.xyz/icon.png",
     "splashBackgroundColor": "#FFC117",
-    "webhookUrl": "https://realmind-celo.dailywiser.xyz/api/webhook",
-    "subtitle": "Interactive Learning",
-    "description": "Test your knowledge and earn rewards on Hyperion Testnet with interactive quiz games.",
+    "webhookUrl": "https://api.neynar.com/f/app/13aa4f6b-45b1-408b-9bb9-103b004f94c1/event",
+    "subtitle": "Learn Quiz Earn Onchain",
+    "description": "Challenge yourself with daily AI-powered quizzes, compete on leaderboards, and earn crypto rewards. The fun way to learn Web3, blockchain, and more while earning real tokens!",
     "primaryCategory": "education",
+    "secondaryCategory": "games",
     "screenshotUrls": [
-      "https://realmind-celo.dailywiser.xyz/icon.png"
+      "https://realmind-celo.dailywiser.xyz/realmind-banner.png",
+      "https://realmind-celo.dailywiser.xyz/quiz-preview.jpeg"
     ],
     "tags": [
       "quiz",
       "learning",
       "education",
       "blockchain",
-      "rewards"
+      "rewards",
+      "web3",
+      "trivia",
+      "earn",
+      "leaderboard",
+      "ai",
+      "crypto",
+      "dailychallenge"
     ],
-    "heroImageUrl": "https://realmind-celo.netlify.app/quiz-preview.jpeg",
-    "tagline": "Learn and Earn",
-    "ogTitle": "Realmind Learning",
-    "ogDescription": "Test your knowledge and earn rewards on Hyperion Testnet!",
-    "ogImageUrl": "https://realmind-celo.dailywiser.xyz/icon.png",
+    "heroImageUrl": "https://realmind-celo.dailywiser.xyz/realmind-banner.png",
+    "tagline": "Learn Earn with Daily Quizzes",
+    "ogTitle": "Realmind Daily Quiz Challenge",
+    "ogDescription": "Test your knowledge climb the leaderboard and earn crypto rewards with AI-powered quizzes!",
+    "ogImageUrl": "https://realmind-celo.dailywiser.xyz/realmind-banner.png",
     "noindex": false
   },
   "accountAssociation": {

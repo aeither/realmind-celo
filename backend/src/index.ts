@@ -43,7 +43,9 @@ app.get('/', (c) => {
       '/farcaster/mappings',
       '/farcaster/profile/:address',
       '/farcaster/clear-cache/:address',
-      '/farcaster/check-fid/:fid'
+      '/farcaster/check-fid/:fid',
+      '/farcaster/score/:fid',
+      '/notifications/send'
     ]
   })
 })
@@ -746,6 +748,155 @@ app.delete('/farcaster/clear-cache/:address', async (c) => {
     return c.json({
       success: false,
       error: 'Failed to clear cache',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Get Neynar user score for a Farcaster user
+app.get('/farcaster/score/:fid', async (c) => {
+  try {
+    const fid = c.req.param('fid')
+
+    if (!fid) {
+      return c.json({
+        success: false,
+        error: 'FID is required'
+      }, 400)
+    }
+
+    const neynarApiKey = process.env.NEYNAR_API_KEY
+    if (!neynarApiKey) {
+      return c.json({
+        success: false,
+        error: 'Neynar API not configured',
+        timestamp: new Date().toISOString()
+      }, 503)
+    }
+
+    console.log(`[Neynar Score] Fetching score for FID ${fid}`)
+    const response = await fetch(
+      `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+      {
+        headers: {
+          'x-api-key': neynarApiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Neynar API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const user = data.users?.[0]
+
+    if (!user) {
+      return c.json({
+        success: false,
+        error: `No user found for FID ${fid}`,
+        timestamp: new Date().toISOString()
+      }, 404)
+    }
+
+    console.log(`[Neynar Score] Found user @${user.username} with score: ${user.experimental?.neynar_user_score}`)
+
+    return c.json({
+      success: true,
+      score: {
+        fid: user.fid,
+        username: user.username,
+        displayName: user.display_name,
+        pfpUrl: user.pfp_url || '',
+        neynarUserScore: user.experimental?.neynar_user_score || 0,
+        followerCount: user.follower_count,
+        followingCount: user.following_count,
+        activeStatus: user.active_status
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('[Neynar Score] Error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to fetch Neynar score',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
+// Send notifications to mini app users via Neynar
+app.post('/notifications/send', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { title, body: notificationBody, targetUrl, targetFids, filters } = body
+
+    if (!title || !notificationBody) {
+      return c.json({
+        success: false,
+        error: 'Title and body are required'
+      }, 400)
+    }
+
+    const neynarApiKey = process.env.NEYNAR_API_KEY
+    if (!neynarApiKey) {
+      return c.json({
+        success: false,
+        error: 'Neynar API not configured',
+        timestamp: new Date().toISOString()
+      }, 503)
+    }
+
+    console.log(`[Notifications] Sending notification: "${title}"`)
+
+    const notificationPayload: any = {
+      notification: {
+        title,
+        body: notificationBody,
+        target_url: targetUrl || 'https://realmind-celo.dailywiser.xyz'
+      },
+      target_fids: targetFids || [] // Empty array targets all users with notifications enabled
+    }
+
+    if (filters) {
+      notificationPayload.filters = filters
+    }
+
+    const response = await fetch(
+      'https://api.neynar.com/v2/farcaster/frame/notifications',
+      {
+        method: 'POST',
+        headers: {
+          'x-api-key': neynarApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notificationPayload)
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Notifications] Neynar API error: ${response.status}`, errorText)
+      throw new Error(`Neynar API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    console.log(`[Notifications] ✅ Notification sent successfully`)
+
+    return c.json({
+      success: true,
+      message: 'Notification sent successfully',
+      data,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('[Notifications] Error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to send notification',
       details: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, 500)
