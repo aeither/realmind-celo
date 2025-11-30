@@ -201,8 +201,12 @@ contract BunnyGame is ReentrancyGuard {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "BunnyGame: caller is not the owner");
+        _onlyOwner();
         _;
+    }
+
+    function _onlyOwner() internal view {
+        require(msg.sender == owner, "BunnyGame: caller is not the owner");
     }
 
     function _initializeBunny(address user) internal {

@@ -50,4 +50,11 @@ cast send --rpc-url https://forno.celo.org --private-key ${PRIVATE_KEY} 0xYOUR_S
 ```
 
 ## Update Frontend
+
+### 1. Regenerate ABIs
+```bash
+npx tsx scripts/fetchABI.ts
+```
+
+### 2. Update Contract Addresses
 Edit `src/libs/constants.ts` with deployed addresses.
