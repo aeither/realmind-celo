@@ -37,6 +37,7 @@ function SwapPage() {
   const [txHash, setTxHash] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [userCancelled, setUserCancelled] = useState(false)
+  const [noQuoteAvailable, setNoQuoteAvailable] = useState(false)
 
   // Token search
   const [fromTokenSearch, setFromTokenSearch] = useState('')
@@ -54,23 +55,24 @@ function SwapPage() {
   // Initialize LI.FI SDK and load chains
   useEffect(() => {
     const initLiFi = async () => {
-      if (lifiInitialized) return
-      
       try {
-        createLiFiConfig({
-          integrator: 'realmind-celo',
-        })
-        lifiInitialized = true
+        // Initialize SDK only if not already initialized
+        if (!lifiInitialized) {
+          createLiFiConfig({
+            integrator: 'realmind-celo',
+          })
+          lifiInitialized = true
+        }
 
         // Load available chains (filter to Farcaster-supported only)
         const allChains = await getChains()
-        const availableChains = allChains.filter(c => FARCASTER_SUPPORTED_CHAINS.includes(c.id))
+        const availableChains = allChains.filter(c => (FARCASTER_SUPPORTED_CHAINS as readonly number[]).includes(c.id))
         setChains(availableChains)
-        
+
         // Set default chains based on current wallet chain or defaults
         const celoChain = availableChains.find(c => c.id === 42220)
         const baseChain = availableChains.find(c => c.id === 8453)
-        
+
         if (chain?.id) {
           const currentChain = availableChains.find(c => c.id === chain.id)
           if (currentChain) {
@@ -79,7 +81,7 @@ function SwapPage() {
         } else if (celoChain) {
           setFromChainId(celoChain.id)
         }
-        
+
         if (baseChain) {
           setToChainId(baseChain.id)
         } else if (celoChain) {
@@ -225,6 +227,7 @@ function SwapPage() {
     setLoadingQuote(true)
     setError('')
     setUserCancelled(false)
+    setNoQuoteAvailable(false)
 
     try {
       const fromAmountWei = parseUnits(amount, fromToken.decimals).toString()
@@ -243,10 +246,16 @@ function SwapPage() {
       setQuote(quoteResult)
     } catch (err: any) {
       console.error('Failed to get quote:', err)
-      // Clean up error message
-      const errorMsg = err.message || 'Failed to get quote'
-      const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
-      setError(cleanError || 'Unable to get quote. Please check your inputs and try again.')
+
+      // Check if it's a "no quotes available" error
+      if (isNoQuotesAvailable(err)) {
+        setNoQuoteAvailable(true)
+      } else {
+        // Clean up error message for actual errors
+        const errorMsg = err.message || 'Failed to get quote'
+        const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
+        setError(cleanError || 'Unable to get quote. Please check your inputs and try again.')
+      }
       setQuote(null)
     } finally {
       setLoadingQuote(false)
@@ -272,6 +281,19 @@ function SwapPage() {
       errorMessage.includes('rejected by user') ||
       errorMessage.includes('transaction was rejected') ||
       errorMessage.includes('user disapproved')
+    )
+  }
+
+  // Helper function to detect "no quotes available" errors
+  const isNoQuotesAvailable = (error: any): boolean => {
+    const errorMessage = error?.message?.toLowerCase() || error?.toString()?.toLowerCase() || ''
+    const statusCode = error?.response?.status || error?.status
+    return (
+      statusCode === 404 ||
+      errorMessage.includes('no available quotes') ||
+      errorMessage.includes('no quotes found') ||
+      errorMessage.includes('no routes found') ||
+      errorMessage.includes('404')
     )
   }
 
@@ -975,6 +997,49 @@ function SwapPage() {
                       padding: "0",
                       lineHeight: "1",
                       color: "hsl(var(--celo-black))"
+                    }}
+                    aria-label="Dismiss"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              {/* No Quote Available Message */}
+              {noQuoteAvailable && (
+                <div style={{
+                  background: "hsl(45 100% 90%)",
+                  border: "2px solid hsl(45 90% 50%)",
+                  padding: "1rem",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  alignItems: "start",
+                  justifyContent: "space-between",
+                  gap: "0.5rem"
+                }}>
+                  <div>
+                    <p className="text-body-heavy" style={{ margin: "0 0 0.5rem 0", fontSize: "0.9rem", color: "hsl(45 70% 25%)" }}>
+                      No Route Found
+                    </p>
+                    <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.8rem", color: "hsl(45 60% 30%)" }}>
+                      We couldn't find a swap route for this combination. This could be because:
+                    </p>
+                    <ul style={{ margin: "0", paddingLeft: "1.25rem", fontSize: "0.75rem", color: "hsl(45 60% 30%)" }}>
+                      <li>The tokens don't have enough liquidity on these chains</li>
+                      <li>Try a different token pair or smaller amount</li>
+                      <li>Bridge to the destination chain first, then swap</li>
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => setNoQuoteAvailable(false)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      padding: "0",
+                      lineHeight: "1",
+                      color: "hsl(45 70% 25%)"
                     }}
                     aria-label="Dismiss"
                   >

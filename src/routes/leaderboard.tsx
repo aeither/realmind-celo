@@ -301,15 +301,6 @@ function LeaderboardPage() {
                   <span><strong>Claim rewards</strong> after {rewardsConfig.seasonEndDate ? formatEndDate(rewardsConfig.seasonEndDate) : 'the competition ends'} — proportional to your XP share</span>
                 </div>
               </div>
-              <div style={{
-                marginTop: '1rem',
-                padding: '0.75rem',
-                background: 'hsl(var(--celo-tan-2))',
-                border: '2px solid hsl(var(--celo-black))',
-                fontSize: '0.8rem'
-              }}>
-                <strong>💡 Pro tip:</strong> The more XP you earn, the larger your share of the prize pool!
-              </div>
             </div>
           </div>
           
