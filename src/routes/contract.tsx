@@ -12,7 +12,7 @@ import {
   useBalance
 } from 'wagmi'
 import { formatEther, parseEther } from 'viem'
-import { quizGameABI } from '../libs/quizGameABI'
+import { quizGameABI } from '../abis/quizGameABI'
 import { getContractAddresses } from '../libs/constants'
 import { CURRENCY_CONFIG, SUPPORTED_CHAIN_IDS } from '../libs/supportedChains'
 

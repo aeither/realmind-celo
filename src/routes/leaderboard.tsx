@@ -5,7 +5,7 @@ import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
 import { leaderboardService, type TokenHolder } from '../libs/leaderboardService'
 import { getContractAddresses, getRewardsConfig } from '../libs/constants'
-import { seasonRewardABI } from '../libs/seasonRewardABI'
+import { seasonRewardABI } from '../abis/seasonRewardABI'
 import { formatEther } from 'viem'
 
 function LeaderboardPage() {

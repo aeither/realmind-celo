@@ -1,15 +1,14 @@
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { tanstackRouterVite } from '@tanstack/router-plugin/vite'
-import tailwindcss from '@tailwindcss/vite'
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import tailwindcss from "@tailwindcss/vite";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    tanstackRouterVite(),
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
-    tailwindcss()
+    tailwindcss(),
   ],
   resolve: {
     alias: {
@@ -23,46 +22,28 @@ export default defineConfig({
     global: "globalThis",
   },
   optimizeDeps: {
-    exclude: ['pg'],
+    exclude: ["pg"],
   },
   build: {
     rollupOptions: {
       output: {
         manualChunks: {
-          // Wallet and blockchain core
-          'wagmi-core': ['wagmi', 'viem', '@wagmi/core'],
-
-          // Coinbase OnchainKit
-          'onchainkit': ['@coinbase/onchainkit'],
-
-          // Farcaster SDK
-          'farcaster': ['@farcaster/miniapp-sdk', '@farcaster/miniapp-wagmi-connector'],
-
-          // Swap/Bridge SDKs
-          'swap-libs': ['@lifi/sdk'],
-
-          // React ecosystem
-          'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
-
-          // Router
-          'router': ['@tanstack/react-router', '@tanstack/react-query'],
-
-          // UI libraries
-          'ui-vendor': [
-            'framer-motion',
-            'lucide-react',
-            'sonner',
-            '@radix-ui/react-dialog'
+          "wagmi-core": ["wagmi", "viem", "@wagmi/core"],
+          onchainkit: ["@coinbase/onchainkit"],
+          farcaster: ["@farcaster/miniapp-sdk", "@farcaster/miniapp-wagmi-connector"],
+          "swap-libs": ["@lifi/sdk"],
+          "react-vendor": ["react", "react-dom", "react/jsx-runtime"],
+          router: ["@tanstack/react-router", "@tanstack/react-query"],
+          "ui-vendor": [
+            "framer-motion",
+            "lucide-react",
+            "sonner",
+            "@radix-ui/react-dialog",
           ],
-
-          // Crypto utilities
-          'crypto-vendor': [
-            'ethers',
-            '@redstone-finance/evm-connector'
-          ],
+          "crypto-vendor": ["ethers", "@redstone-finance/evm-connector"],
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increase limit to 1MB for vendor chunks
+    chunkSizeWarningLimit: 1000,
   },
 });

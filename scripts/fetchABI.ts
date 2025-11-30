@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CONTRACTS_OUT_DIR = path.join(__dirname, '../contracts/out');
-const LIBS_DIR = path.join(__dirname, '../src/libs');
+const ABIS_DIR = path.join(__dirname, '../src/abis');
 
 // Contract configurations: [solFile, contractName, outputName]
 const CONTRACTS = [
@@ -55,7 +55,7 @@ function generateABIFile(outputName: string, abi: any[]): void {
 export const ${outputName} = ${JSON.stringify(abi, null, 2)} as const;
 `;
 
-  const outputPath = path.join(LIBS_DIR, `${outputName}.ts`);
+  const outputPath = path.join(ABIS_DIR, `${outputName}.ts`);
   fs.writeFileSync(outputPath, content);
   console.log(`✓ Generated ${outputName}.ts`);
 }
@@ -64,8 +64,8 @@ function main() {
   console.log('🔄 Fetching ABIs from compiled contracts...\n');
 
   // Ensure output directory exists
-  if (!fs.existsSync(LIBS_DIR)) {
-    fs.mkdirSync(LIBS_DIR, { recursive: true });
+  if (!fs.existsSync(ABIS_DIR)) {
+    fs.mkdirSync(ABIS_DIR, { recursive: true });
   }
 
   // Generate ABI files
@@ -82,7 +82,7 @@ function main() {
   console.log('\n✅ All ABIs generated successfully!');
   console.log('\nGenerated files:');
   CONTRACTS.forEach(([, , outputName]) => {
-    console.log(`  - src/libs/${outputName}.ts`);
+    console.log(`  - src/abis/${outputName}.ts`);
   });
 }
 

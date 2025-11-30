@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther } from 'viem'
 import { toast } from 'sonner'
-import { quizGameABI } from '../libs/quizGameABI'
+import { quizGameABI } from '../abis/quizGameABI'
 import { getContractAddresses } from '../libs/constants'
 import GlobalHeader from '../components/GlobalHeader'
 

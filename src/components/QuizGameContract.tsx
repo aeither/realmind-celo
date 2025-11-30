@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount, useDisconnect, useReadContract, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { getContractAddresses } from '../libs/constants';
-import { quizGameABI } from '../libs/quizGameABI';
+import { quizGameABI } from '../abis/quizGameABI';
 import { SUPPORTED_CHAIN, SUPPORTED_CHAINS, CURRENCY_CONFIG } from '../libs/supportedChains';
 import { getDivviDataSuffix, submitDivviReferral } from '../libs/divviReferral';
 

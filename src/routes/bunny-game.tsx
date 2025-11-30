@@ -3,9 +3,9 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { useState, useEffect } from 'react'
 import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
-import { bunnyGameABI } from '../libs/bunnyGameABI'
-import { retentionSystemABI } from '../libs/retentionSystemABI'
-import { eggTokenABI } from '../libs/eggTokenABI'
+import { bunnyGameABI } from '../abis/bunnyGameABI'
+import { retentionSystemABI } from '../abis/retentionSystemABI'
+import { eggTokenABI } from '../abis/eggTokenABI'
 import { getContractAddresses } from '../libs/constants'
 import { formatEther } from 'viem'
 
