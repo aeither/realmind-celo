@@ -6,21 +6,7 @@ import { parseUnits, formatUnits, erc20Abi } from 'viem'
 import { useReadContract } from 'wagmi'
 import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
-
-// Farcaster-supported chain IDs
-const FARCASTER_SUPPORTED_CHAINS = [
-  1,      // Ethereum Mainnet
-  8453,   // Base
-  10,     // Optimism
-  42161,  // Arbitrum
-  137,    // Polygon
-  7777777, // Zora
-  130,    // Unichain
-  100,    // Gnosis
-  56,     // BNB Chain (BSC)
-  43114,  // Avalanche C-Chain
-  42220,  // Celo
-]
+import { FARCASTER_SUPPORTED_CHAINS } from '../libs/constants'
 
 // Initialize LI.FI SDK
 let lifiInitialized = false
@@ -50,6 +36,7 @@ function SwapPage() {
   const [executionStatus, setExecutionStatus] = useState<string>('')
   const [txHash, setTxHash] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const [userCancelled, setUserCancelled] = useState(false)
 
   // Token search
   const [fromTokenSearch, setFromTokenSearch] = useState('')
@@ -118,7 +105,7 @@ function SwapPage() {
           EVM({
             getWalletClient: () => Promise.resolve(walletClient as any),
             switchChain: async (chainId: number) => {
-              switchChain({ chainId: chainId as 8453 | 42220 | 41923 })
+              switchChain({ chainId: chainId as any })
               return walletClient as any
             }
           })
@@ -139,7 +126,7 @@ function SwapPage() {
   // Fetch native token balance (only when on correct chain)
   const { data: nativeBalance } = useBalance({
     address: address,
-    chainId: fromChainId as 8453 | 42220 | 41923 | undefined,
+    chainId: fromChainId as any,
     query: {
       enabled: !!address && !!fromChainId && fromToken?.address === '0x0000000000000000000000000000000000000000' && chain?.id === fromChainId,
       refetchInterval: 10000,
@@ -152,7 +139,7 @@ function SwapPage() {
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: fromChainId as 8453 | 42220 | 41923 | undefined,
+    chainId: fromChainId as any,
     query: {
       enabled: !!address && !!fromToken && fromToken.address !== '0x0000000000000000000000000000000000000000' && !!fromChainId && chain?.id === fromChainId,
       refetchInterval: 10000,
@@ -237,6 +224,7 @@ function SwapPage() {
 
     setLoadingQuote(true)
     setError('')
+    setUserCancelled(false)
 
     try {
       const fromAmountWei = parseUnits(amount, fromToken.decimals).toString()
@@ -255,7 +243,10 @@ function SwapPage() {
       setQuote(quoteResult)
     } catch (err: any) {
       console.error('Failed to get quote:', err)
-      setError(err.message || 'Failed to get quote')
+      // Clean up error message
+      const errorMsg = err.message || 'Failed to get quote'
+      const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
+      setError(cleanError || 'Unable to get quote. Please check your inputs and try again.')
       setQuote(null)
     } finally {
       setLoadingQuote(false)
@@ -270,6 +261,20 @@ function SwapPage() {
     return () => clearTimeout(timer)
   }, [fetchQuote])
 
+  // Helper function to detect user rejection errors
+  const isUserRejection = (error: any): boolean => {
+    const errorMessage = error?.message?.toLowerCase() || error?.toString()?.toLowerCase() || ''
+    return (
+      errorMessage.includes('user rejected') ||
+      errorMessage.includes('user denied') ||
+      errorMessage.includes('user cancelled') ||
+      errorMessage.includes('user canceled') ||
+      errorMessage.includes('rejected by user') ||
+      errorMessage.includes('transaction was rejected') ||
+      errorMessage.includes('user disapproved')
+    )
+  }
+
   // Execute swap
   const handleSwap = async () => {
     if (!quote || !walletClient) return
@@ -277,12 +282,13 @@ function SwapPage() {
     setExecuting(true)
     setExecutionStatus('Preparing transaction...')
     setError('')
+    setUserCancelled(false)
     setTxHash('')
 
     try {
       const route = convertQuoteToRoute(quote)
-      
-      const executedRoute = await executeRoute(route, {
+
+      await executeRoute(route, {
         updateRouteHook: (updatedRoute: RouteExtended) => {
           // Update status based on execution progress
           const step = updatedRoute.steps[0]
@@ -303,7 +309,7 @@ function SwapPage() {
       })
 
       setExecutionStatus('Swap completed!')
-      
+
       // Reset form after successful swap
       setTimeout(() => {
         setAmount('')
@@ -313,7 +319,18 @@ function SwapPage() {
       }, 3000)
     } catch (err: any) {
       console.error('Swap failed:', err)
-      setError(err.message || 'Swap failed')
+
+      // Check if error is user rejection
+      if (isUserRejection(err)) {
+        setUserCancelled(true)
+      } else {
+        // Show actual error for non-rejection errors
+        const errorMsg = err.message || 'Swap failed'
+        // Clean up technical details from error message
+        const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
+        setError(cleanError || 'Swap failed. Please try again.')
+      }
+
       setExecuting(false)
       setExecutionStatus('')
     }
@@ -331,11 +348,22 @@ function SwapPage() {
 
   // Handle chain switch for swap
   const handleChainSwitch = async () => {
-    if (fromChainId && chain?.id !== fromChainId) {
-      try {
-        switchChain({ chainId: fromChainId as 8453 | 42220 | 41923 })
-      } catch (err) {
-        console.error('Failed to switch chain:', err)
+    if (!fromChainId || fromChainId === chain?.id) return
+
+    setError('')
+    setUserCancelled(false)
+
+    try {
+      await switchChain({ chainId: fromChainId as any })
+      setNeedsChainSwitch(false)
+    } catch (err: any) {
+      console.error('Failed to switch chain:', err)
+
+      // Check if user rejected the chain switch
+      if (isUserRejection(err)) {
+        setUserCancelled(true)
+      } else {
+        setError('Failed to switch network. Please try switching manually in your wallet.')
       }
     }
   }
@@ -611,10 +639,16 @@ function SwapPage() {
                   </div>
 
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*"
                     placeholder="0.0"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                      // Filter to numbers/decimals only for crypto amounts
+                      const filtered = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                      setAmount(filtered);
+                    }}
                     disabled={!isConnected}
                     style={{
                       flex: "1",
@@ -911,6 +945,44 @@ function SwapPage() {
                 </div>
               )}
 
+              {/* User Cancelled Message */}
+              {userCancelled && (
+                <div style={{
+                  background: "hsl(var(--celo-tan-2))",
+                  border: "2px solid hsl(var(--celo-black))",
+                  padding: "1rem",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  alignItems: "start",
+                  justifyContent: "space-between",
+                  gap: "0.5rem"
+                }}>
+                  <div>
+                    <p className="text-body-heavy" style={{ margin: "0 0 0.25rem 0", fontSize: "0.9rem" }}>
+                      Transaction Cancelled
+                    </p>
+                    <p className="text-body" style={{ margin: "0", fontSize: "0.8rem", color: "hsl(var(--celo-brown))" }}>
+                      You rejected the transaction. No worries, you can try again when ready.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setUserCancelled(false)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      padding: "0",
+                      lineHeight: "1",
+                      color: "hsl(var(--celo-black))"
+                    }}
+                    aria-label="Dismiss"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               {/* Error Message */}
               {error && (
                 <div style={{
@@ -918,11 +990,34 @@ function SwapPage() {
                   border: "2px solid hsl(0 70% 50%)",
                   padding: "1rem",
                   marginBottom: "1rem",
-                  color: "hsl(0 70% 40%)"
+                  display: "flex",
+                  alignItems: "start",
+                  justifyContent: "space-between",
+                  gap: "0.5rem"
                 }}>
-                  <p className="text-body-heavy" style={{ margin: "0", fontSize: "0.85rem" }}>
-                    {error}
-                  </p>
+                  <div>
+                    <p className="text-body-heavy" style={{ margin: "0 0 0.25rem 0", fontSize: "0.9rem", color: "hsl(0 70% 40%)" }}>
+                      Transaction Failed
+                    </p>
+                    <p style={{ margin: "0", fontSize: "0.8rem", color: "hsl(0 70% 40%)" }}>
+                      {error}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setError('')}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      padding: "0",
+                      lineHeight: "1",
+                      color: "hsl(0 70% 40%)"
+                    }}
+                    aria-label="Dismiss"
+                  >
+                    ×
+                  </button>
                 </div>
               )}
 
