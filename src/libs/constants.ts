@@ -1,51 +1,29 @@
 // Contract addresses by chain ID
+// Note: This app only supports Celo (42220) for game contracts
+// Swap/bridge functionality may support other chains
 const CONTRACT_ADDRESSES = {
-  // Base (Mainnet)
-  8453: {
-    token1ContractAddress: "0xF3c3D545f3dD2A654dF2F54BcF98421CE2e3f121",
-    quizGameContractAddress: "0x25D79A35F6323D0d3EE617549Cc507ED6B9639Cb",
-    seasonRewardContractAddress: "0x47358AF939cdB5B2b79a1AEE7d9E02760b2b73b2",
-    // New demo contracts (placeholder addresses - update after deployment)
-    quizDuelContractAddress: "0x0000000000000000000000000000000000000001",
-    guildSystemContractAddress: "0x0000000000000000000000000000000000000002",
-    quizNFTContractAddress: "0x0000000000000000000000000000000000000003"
-  },
+  // Celo (Mainnet) - Primary and only supported chain for game contracts
   42220: {
     token1ContractAddress: "0xe05489dea86d85c32609410a1bF9C35a0f8fc2e7",
-    quizGameContractAddress: "0x367c011DC980E695EdE1e314af0a82C7E2b01e3B"
-  },
-  // EDU Chain
-  41923: {
-    token1ContractAddress: "0x57AED70DA2c288E4a79D2ca797ED9B276db47793",
-    quizGameContractAddress: "0x5A65590851b40939830cB5Ced3dEe8A0051cEDb7"
+    quizGameContractAddress: "0x367c011DC980E695EdE1e314af0a82C7E2b01e3B",
+    seasonRewardContractAddress: "0x0000000000000000000000000000000000000000",
+    // BunnyGame contracts (update after deployment)
+    eggTokenContractAddress: "0x0000000000000000000000000000000000000000",
+    bunnyGameContractAddress: "0x0000000000000000000000000000000000000000",
+    retentionSystemContractAddress: "0x0000000000000000000000000000000000000000"
   }
 } as const;
 
 // Rewards configuration by chain ID
+// Note: Only Celo (42220) is supported
 const REWARDS_CONFIG = {
-  // Base (Mainnet)
-  8453: {
-    totalReward: 600000,
-    currency: "YUZU",
-    symbol: "🍊",
-    maxWinners: 200,
-    seasonEndDate: undefined // No deadline for Base
-  },
-  // Celo
+  // Celo (Mainnet) - Only supported chain
   42220: {
     totalReward: 250,
     currency: "CELO",
     symbol: "🟡",
     maxWinners: 30,
     seasonEndDate: new Date("2025-12-05T23:59:59Z") // Celo season ends December 5, 2025
-  },
-  // EDU Chain
-  41923: {
-    totalReward: 10000,
-    currency: "XP3",
-    symbol: "🎓",
-    maxWinners: 100,
-    seasonEndDate: undefined // No deadline for EDU Chain
   }
 } as const;
 
@@ -112,23 +90,16 @@ export const token1ABI = [
 ] as const;
 
 // Function to get contract addresses by chain ID
-export function getContractAddresses(chainId: number) {
-  return CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES] || {
-    token1ContractAddress: "0x0000000000000000000000000000000000000000",
-    quizGameContractAddress: "0x0000000000000000000000000000000000000000",
-    seasonRewardContractAddress: "0x0000000000000000000000000000000000000000"
-  };
+export function getContractAddresses(_chainId: number) {
+  // Only Celo (42220) is supported - return Celo addresses for any chain
+  // This ensures the app always uses Celo contracts
+  return CONTRACT_ADDRESSES[42220];
 }
 
 // Function to get rewards configuration by chain ID
-export function getRewardsConfig(chainId: number) {
-  return REWARDS_CONFIG[chainId as keyof typeof REWARDS_CONFIG] || {
-    totalReward: 0,
-    currency: "UNKNOWN",
-    symbol: "❓",
-    maxWinners: 200,
-    seasonEndDate: undefined
-  };
+export function getRewardsConfig(_chainId: number) {
+  // Only Celo (42220) is supported - return Celo config for any chain
+  return REWARDS_CONFIG[42220];
 }
 
 // Legacy exports removed - use getContractAddresses(chainId) instead

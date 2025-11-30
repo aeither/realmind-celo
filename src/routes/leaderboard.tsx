@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useState, useEffect } from 'react'
 import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
 import { leaderboardService, type TokenHolder } from '../libs/leaderboardService'
 import { getContractAddresses, getRewardsConfig } from '../libs/constants'
+import { seasonRewardABI } from '../libs/bunnyGameABI'
+import { formatEther } from 'viem'
 
 function LeaderboardPage() {
   const { chain, address } = useAccount()
@@ -16,10 +18,66 @@ function LeaderboardPage() {
   const [daysRemaining, setDaysRemaining] = useState(0)
   const [userRank, setUserRank] = useState<number | null>(null)
   const [showTooltip, setShowTooltip] = useState<string | null>(null)
+  const [claimTxHash, setClaimTxHash] = useState<`0x${string}` | undefined>()
 
   // Get contract addresses and rewards config based on current chain
   const contractAddresses = chain ? getContractAddresses(chain.id) : null
   const rewardsConfig = getRewardsConfig(chain?.id || 0)
+  const seasonRewardAddress = contractAddresses?.seasonRewardContractAddress as `0x${string}` | undefined
+
+  // Read claim status from SeasonReward contract
+  const { data: claimStatus, refetch: refetchClaimStatus } = useReadContract({
+    address: seasonRewardAddress,
+    abi: seasonRewardABI,
+    functionName: 'getClaimStatus',
+    args: address ? [address] : undefined,
+    query: { 
+      enabled: !!address && !!seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
+    }
+  })
+
+  // Read if distribution is active
+  const { data: isDistributionActive } = useReadContract({
+    address: seasonRewardAddress,
+    abi: seasonRewardABI,
+    functionName: 'isDistributionActive',
+    query: { 
+      enabled: !!seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
+    }
+  })
+
+  // Write contract hook for claiming
+  const { writeContract, isPending: isClaimPending } = useWriteContract()
+
+  // Transaction confirmation
+  const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } = useWaitForTransactionReceipt({
+    hash: claimTxHash,
+  })
+
+  // Refetch claim status on success
+  useEffect(() => {
+    if (isClaimSuccess) {
+      refetchClaimStatus()
+      setClaimTxHash(undefined)
+    }
+  }, [isClaimSuccess])
+
+  const handleClaimReward = () => {
+    if (!seasonRewardAddress) return
+    writeContract({
+      address: seasonRewardAddress,
+      abi: seasonRewardABI,
+      functionName: 'claimReward',
+    }, {
+      onSuccess: (hash) => setClaimTxHash(hash)
+    })
+  }
+
+  // Parse claim status
+  const rewardAmount = claimStatus ? claimStatus[0] : BigInt(0)
+  const hasClaimed = claimStatus ? claimStatus[1] : false
+  const canClaim = claimStatus ? claimStatus[2] : false
+  const hasSeasonRewardContract = seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
 
   const fetchLeaderboard = async () => {
     if (!chain || !contractAddresses) {
@@ -440,6 +498,82 @@ function LeaderboardPage() {
           </div>
         ) : (
           <>
+            {/* Season Rewards Claim Section */}
+            {hasSeasonRewardContract && address && (
+              <div style={{
+                background: hasClaimed 
+                  ? "linear-gradient(135deg, #d1fae5, #a7f3d0)"
+                  : canClaim 
+                    ? "linear-gradient(135deg, #fef3c7, #fde68a)"
+                    : "linear-gradient(135deg, #f3f4f6, #e5e7eb)",
+                border: canClaim ? "2px solid #f59e0b" : "2px solid #d1d5db",
+                padding: "1.25rem",
+                borderRadius: "16px",
+                marginBottom: "1rem",
+                textAlign: "center"
+              }}>
+                <div style={{ 
+                  fontSize: "1.5rem", 
+                  marginBottom: "0.5rem"
+                }}>
+                  {hasClaimed ? "✅" : canClaim ? "🎁" : rewardAmount > BigInt(0) ? "⏳" : "📊"}
+                </div>
+                <div style={{ 
+                  fontSize: "1.1rem", 
+                  fontWeight: "600",
+                  color: "#1e293b",
+                  marginBottom: "0.5rem"
+                }}>
+                  {hasClaimed 
+                    ? "Reward Claimed!" 
+                    : canClaim 
+                      ? `${formatEther(rewardAmount)} ${rewardsConfig.currency} Available!`
+                      : rewardAmount > BigInt(0)
+                        ? `${formatEther(rewardAmount)} ${rewardsConfig.currency} Pending`
+                        : "No Rewards Yet"
+                  }
+                </div>
+                {canClaim && (
+                  <button
+                    onClick={handleClaimReward}
+                    disabled={isClaimPending || isClaimConfirming}
+                    style={{
+                      background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "1rem 2rem",
+                      fontSize: "1rem",
+                      fontWeight: "600",
+                      cursor: isClaimPending || isClaimConfirming ? "not-allowed" : "pointer",
+                      boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                      marginTop: "0.5rem"
+                    }}
+                  >
+                    {isClaimPending || isClaimConfirming ? "⏳ Claiming..." : "🎉 Claim Reward"}
+                  </button>
+                )}
+                {!isDistributionActive && !hasClaimed && rewardAmount > BigInt(0) && (
+                  <div style={{ 
+                    fontSize: "0.85rem", 
+                    color: "#dc2626",
+                    marginTop: "0.5rem"
+                  }}>
+                    ⚠️ Claim period has ended
+                  </div>
+                )}
+                {hasClaimed && (
+                  <div style={{ 
+                    fontSize: "0.85rem", 
+                    color: "#16a34a",
+                    marginTop: "0.25rem"
+                  }}>
+                    Your reward has been sent to your wallet
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* User Position Banner */}
             {address && userRank && (
               <div style={{
@@ -472,7 +606,7 @@ function LeaderboardPage() {
                     textTransform: "uppercase",
                     letterSpacing: "0.05em"
                   }}>
-                    📊 Your Current Positionx
+                    📊 Your Current Position
                   </div>
                   <div style={{ 
                     fontSize: "2rem", 

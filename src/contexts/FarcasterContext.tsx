@@ -108,21 +108,10 @@ export function FarcasterProvider({ children }: FarcasterProviderProps) {
     }
 
     try {
-      const result = await sdk.actions.addFrame();
-      
-      if (result.added) {
-        setIsAdded(true);
-        if (result.notificationDetails) {
-          setHasNotifications(true);
-          console.log('Mini app added with notifications enabled');
-        } else {
-          console.log('Mini app added without notifications');
-        }
-        return true;
-      } else {
-        console.log('User rejected adding mini app:', result.reason);
-        return false;
-      }
+      await sdk.actions.addFrame();
+      setIsAdded(true);
+      console.log('Mini app added successfully');
+      return true;
     } catch (error) {
       console.error('Error adding mini app:', error);
       return false;

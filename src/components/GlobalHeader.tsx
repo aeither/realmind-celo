@@ -160,11 +160,11 @@ function GlobalHeader({
               padding: "clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.5rem, 2vw, 1rem)",
               transition: "var(--transition-fast)"
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
               e.currentTarget.style.background = "hsl(var(--celo-yellow))";
               e.currentTarget.style.color = "hsl(var(--celo-black))";
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
               e.currentTarget.style.background = "hsl(var(--celo-white))";
               e.currentTarget.style.color = "hsl(var(--celo-black))";
             }}

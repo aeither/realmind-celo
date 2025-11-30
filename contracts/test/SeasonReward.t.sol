@@ -111,6 +111,14 @@ contract SeasonRewardTest is Test {
         seasonReward.endDistribution();
     }
 
+    function testReopenDistribution() public {
+        seasonReward.endDistribution();
+        assertTrue(seasonReward.distributionEnded());
+        
+        seasonReward.reopenDistribution();
+        assertFalse(seasonReward.distributionEnded());
+    }
+
     function testClaimReward() public {
         // Fund the contract
         vm.deal(address(seasonReward), 10 ether);
@@ -132,6 +140,28 @@ contract SeasonRewardTest is Test {
 
         assertEq(user1.balance, initialBalance + 1 ether);
         assertEq(seasonReward.rewards(user1), 0);
+        assertTrue(seasonReward.hasClaimed(user1));
+    }
+
+    function testCannotClaimTwice() public {
+        // Fund the contract
+        vm.deal(address(seasonReward), 10 ether);
+        
+        // Set reward for user1
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        users[0] = user1;
+        amounts[0] = 1 ether;
+        seasonReward.setSeasonRewards(users, amounts);
+
+        // First claim
+        vm.prank(user1);
+        seasonReward.claimReward();
+
+        // Try second claim
+        vm.prank(user1);
+        vm.expectRevert("No reward");
+        seasonReward.claimReward();
     }
 
     function testClaimRewardNoReward() public {
@@ -197,6 +227,111 @@ contract SeasonRewardTest is Test {
         seasonReward.withdraw();
     }
 
+    function testTransferOwnership() public {
+        address newOwner = address(0x999);
+        seasonReward.transferOwnership(newOwner);
+        assertEq(seasonReward.owner(), newOwner);
+    }
+
+    function testTransferOwnershipOnlyOwner() public {
+        vm.prank(user1);
+        vm.expectRevert("Not owner");
+        seasonReward.transferOwnership(user1);
+    }
+
+    // ========== VIEW FUNCTION TESTS ==========
+
+    function testGetClaimStatus() public {
+        // Set reward for user1
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        users[0] = user1;
+        amounts[0] = 1 ether;
+        seasonReward.setSeasonRewards(users, amounts);
+
+        // Before claim
+        (uint256 rewardAmount, bool claimed, bool canClaim) = seasonReward.getClaimStatus(user1);
+        assertEq(rewardAmount, 1 ether);
+        assertFalse(claimed);
+        assertTrue(canClaim);
+
+        // Fund and claim
+        vm.deal(address(seasonReward), 10 ether);
+        vm.prank(user1);
+        seasonReward.claimReward();
+
+        // After claim
+        (rewardAmount, claimed, canClaim) = seasonReward.getClaimStatus(user1);
+        assertEq(rewardAmount, 0);
+        assertTrue(claimed);
+        assertFalse(canClaim);
+    }
+
+    function testGetClaimStatusWhenDistributionEnded() public {
+        // Set reward for user1
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        users[0] = user1;
+        amounts[0] = 1 ether;
+        seasonReward.setSeasonRewards(users, amounts);
+
+        // End distribution
+        seasonReward.endDistribution();
+
+        (uint256 rewardAmount, bool claimed, bool canClaim) = seasonReward.getClaimStatus(user1);
+        assertEq(rewardAmount, 1 ether);
+        assertFalse(claimed);
+        assertFalse(canClaim); // Can't claim because distribution ended
+    }
+
+    function testGetContractBalance() public {
+        assertEq(seasonReward.getContractBalance(), 0);
+        
+        vm.deal(address(seasonReward), 5 ether);
+        assertEq(seasonReward.getContractBalance(), 5 ether);
+    }
+
+    function testIsDistributionActive() public {
+        assertTrue(seasonReward.isDistributionActive());
+        
+        seasonReward.endDistribution();
+        assertFalse(seasonReward.isDistributionActive());
+        
+        seasonReward.reopenDistribution();
+        assertTrue(seasonReward.isDistributionActive());
+    }
+
+    function testBatchGetClaimStatus() public {
+        // Set rewards
+        address[] memory users = new address[](3);
+        uint256[] memory amounts = new uint256[](3);
+        users[0] = user1;
+        users[1] = user2;
+        users[2] = user3;
+        amounts[0] = 1 ether;
+        amounts[1] = 2 ether;
+        amounts[2] = 3 ether;
+        seasonReward.setSeasonRewards(users, amounts);
+
+        // Fund and have user1 claim
+        vm.deal(address(seasonReward), 10 ether);
+        vm.prank(user1);
+        seasonReward.claimReward();
+
+        // Batch check
+        (uint256[] memory rewardAmounts, bool[] memory claimedStatus) = seasonReward.batchGetClaimStatus(users);
+        
+        assertEq(rewardAmounts[0], 0); // user1 claimed
+        assertEq(rewardAmounts[1], 2 ether);
+        assertEq(rewardAmounts[2], 3 ether);
+        
+        assertTrue(claimedStatus[0]); // user1 claimed
+        assertFalse(claimedStatus[1]);
+        assertFalse(claimedStatus[2]);
+    }
+
+    // ========== INTEGRATION TESTS ==========
+
     function testCompleteSeasonFlow() public {
         // Fund the contract
         uint256 totalFunding = 10 ether;
@@ -238,10 +373,10 @@ contract SeasonRewardTest is Test {
         assertEq(user2.balance, user2InitialBalance + 3 ether);
         assertEq(user3.balance, user3InitialBalance + 1 ether);
 
-        // Verify rewards are reset
-        assertEq(seasonReward.rewards(user1), 0);
-        assertEq(seasonReward.rewards(user2), 0);
-        assertEq(seasonReward.rewards(user3), 0);
+        // Verify claimed status
+        assertTrue(seasonReward.hasClaimed(user1));
+        assertTrue(seasonReward.hasClaimed(user2));
+        assertTrue(seasonReward.hasClaimed(user3));
 
         // Owner withdraws remaining funds
         uint256 remainingFunds = totalFunding - 6 ether; // 4 ether left
@@ -294,8 +429,30 @@ contract SeasonRewardTest is Test {
         assertEq(seasonReward.rewards(user3), 3 ether);
     }
 
-    event SeasonFunded(uint256 total);
-    event RewardSet(address indexed user, uint256 amount);
-    event Claimed(address indexed user, uint256 amount);
-    event Withdrawn(address indexed owner, uint256 amount);
+    function testReopenDistributionAllowsClaims() public {
+        // Set reward
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        users[0] = user1;
+        amounts[0] = 1 ether;
+        seasonReward.setSeasonRewards(users, amounts);
+        vm.deal(address(seasonReward), 10 ether);
+
+        // End distribution
+        seasonReward.endDistribution();
+
+        // User can't claim
+        vm.prank(user1);
+        vm.expectRevert("Claiming ended");
+        seasonReward.claimReward();
+
+        // Reopen distribution
+        seasonReward.reopenDistribution();
+
+        // User can claim now
+        vm.prank(user1);
+        seasonReward.claimReward();
+
+        assertTrue(seasonReward.hasClaimed(user1));
+    }
 }

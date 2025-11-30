@@ -16,7 +16,7 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ContractRouteImport } from './routes/contract'
-import { Route as ChickenRouteImport } from './routes/chicken'
+import { Route as BunnyGameRouteImport } from './routes/bunny-game'
 import { Route as BackendDemoRouteImport } from './routes/backend-demo'
 import { Route as AiQuizRouteImport } from './routes/ai-quiz'
 import { Route as IndexRouteImport } from './routes/index'
@@ -56,9 +56,9 @@ const ContractRoute = ContractRouteImport.update({
   path: '/contract',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChickenRoute = ChickenRouteImport.update({
-  id: '/chicken',
-  path: '/chicken',
+const BunnyGameRoute = BunnyGameRouteImport.update({
+  id: '/bunny-game',
+  path: '/bunny-game',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BackendDemoRoute = BackendDemoRouteImport.update({
@@ -81,7 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
-  '/chicken': typeof ChickenRoute
+  '/bunny-game': typeof BunnyGameRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
@@ -94,7 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
-  '/chicken': typeof ChickenRoute
+  '/bunny-game': typeof BunnyGameRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
@@ -108,7 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
-  '/chicken': typeof ChickenRoute
+  '/bunny-game': typeof BunnyGameRoute
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
@@ -123,7 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
-    | '/chicken'
+    | '/bunny-game'
     | '/contract'
     | '/demo'
     | '/landing'
@@ -136,7 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
-    | '/chicken'
+    | '/bunny-game'
     | '/contract'
     | '/demo'
     | '/landing'
@@ -149,7 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-quiz'
     | '/backend-demo'
-    | '/chicken'
+    | '/bunny-game'
     | '/contract'
     | '/demo'
     | '/landing'
@@ -163,7 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiQuizRoute: typeof AiQuizRoute
   BackendDemoRoute: typeof BackendDemoRoute
-  ChickenRoute: typeof ChickenRoute
+  BunnyGameRoute: typeof BunnyGameRoute
   ContractRoute: typeof ContractRoute
   DemoRoute: typeof DemoRoute
   LandingRoute: typeof LandingRoute
@@ -224,11 +224,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chicken': {
-      id: '/chicken'
-      path: '/chicken'
-      fullPath: '/chicken'
-      preLoaderRoute: typeof ChickenRouteImport
+    '/bunny-game': {
+      id: '/bunny-game'
+      path: '/bunny-game'
+      fullPath: '/bunny-game'
+      preLoaderRoute: typeof BunnyGameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/backend-demo': {
@@ -259,7 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiQuizRoute: AiQuizRoute,
   BackendDemoRoute: BackendDemoRoute,
-  ChickenRoute: ChickenRoute,
+  BunnyGameRoute: BunnyGameRoute,
   ContractRoute: ContractRoute,
   DemoRoute: DemoRoute,
   LandingRoute: LandingRoute,

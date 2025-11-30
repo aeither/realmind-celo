@@ -1,0 +1,16 @@
+{
+  "name": "realmind-contracts-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for processing and uploading rewards",
+  "type": "module",
+  "scripts": {
+    "process": "npx ts-node process-rewards.ts",
+    "upload": "npx ts-node upload-rewards.ts"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0"
+  }
+}
+
