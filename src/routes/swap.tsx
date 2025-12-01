@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState, useCallback } from 'react'
 import { useAccount, useWalletClient, useSwitchChain, useBalance } from 'wagmi'
-import { createConfig as createLiFiConfig, getChains, getTokens, getQuote, getRoutes, executeRoute, convertQuoteToRoute, EVM, type Token, type ExtendedChain, type QuoteRequest, type RoutesRequest, type RouteExtended } from '@lifi/sdk'
+import { createConfig as createLiFiConfig, getChains, getTokens, getQuote, executeRoute, convertQuoteToRoute, EVM, type Token, type ExtendedChain, type QuoteRequest, type RouteExtended } from '@lifi/sdk'
 import { parseUnits, formatUnits, erc20Abi } from 'viem'
 import { useReadContract } from 'wagmi'
 import GlobalHeader from '../components/GlobalHeader'
@@ -38,7 +38,6 @@ function SwapPage() {
   const [error, setError] = useState<string>('')
   const [userCancelled, setUserCancelled] = useState(false)
   const [noQuoteAvailable, setNoQuoteAvailable] = useState(false)
-  const [isMultistep, setIsMultistep] = useState(false)
 
   // Token search
   const [fromTokenSearch, setFromTokenSearch] = useState('')
@@ -70,23 +69,29 @@ function SwapPage() {
         const availableChains = allChains.filter(c => (FARCASTER_SUPPORTED_CHAINS as readonly number[]).includes(c.id))
         setChains(availableChains)
 
-        // Set default chains based on current wallet chain or defaults
+        // Set default chains based on current wallet chain or defaults (only if not already set)
         const celoChain = availableChains.find(c => c.id === 42220)
         const baseChain = availableChains.find(c => c.id === 8453)
 
-        if (chain?.id) {
-          const currentChain = availableChains.find(c => c.id === chain.id)
-          if (currentChain) {
-            setFromChainId(currentChain.id)
+        // Only set fromChainId if not already set
+        if (!fromChainId) {
+          if (chain?.id) {
+            const currentChain = availableChains.find(c => c.id === chain.id)
+            if (currentChain) {
+              setFromChainId(currentChain.id)
+            }
+          } else if (celoChain) {
+            setFromChainId(celoChain.id)
           }
-        } else if (celoChain) {
-          setFromChainId(celoChain.id)
         }
 
-        if (baseChain) {
-          setToChainId(baseChain.id)
-        } else if (celoChain) {
-          setToChainId(celoChain.id)
+        // Only set toChainId if not already set
+        if (!toChainId) {
+          if (baseChain) {
+            setToChainId(baseChain.id)
+          } else if (celoChain) {
+            setToChainId(celoChain.id)
+          }
         }
       } catch (err) {
         console.error('Failed to initialize LI.FI:', err)
@@ -189,17 +194,14 @@ function SwapPage() {
             setFromToken(nativeToken)
           }
         }
-        
-        // Auto-select USDC or native token for to chain
+
+        // Auto-select native token for to chain (safer than USDC which may have deny-listed variants)
         if (toChainId && tokensResponse.tokens[toChainId]) {
-          const usdcToken = tokensResponse.tokens[toChainId].find(
-            t => t.symbol.toUpperCase() === 'USDC'
-          )
           const nativeToken = tokensResponse.tokens[toChainId].find(
             t => t.address === '0x0000000000000000000000000000000000000000'
           )
           if (!toToken) {
-            setToToken(usdcToken || nativeToken || null)
+            setToToken(nativeToken || null)
           }
         }
       } catch (err) {
@@ -216,14 +218,12 @@ function SwapPage() {
   const fetchQuote = useCallback(async () => {
     if (!fromChainId || !toChainId || !fromToken || !toToken || !amount || !address) {
       setQuote(null)
-      setIsMultistep(false)
       return
     }
 
     const parsedAmount = parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setQuote(null)
-      setIsMultistep(false)
       return
     }
 
@@ -231,7 +231,6 @@ function SwapPage() {
     setError('')
     setUserCancelled(false)
     setNoQuoteAvailable(false)
-    setIsMultistep(false)
 
     try {
       const fromAmountWei = parseUnits(amount, fromToken.decimals).toString()
@@ -248,58 +247,38 @@ function SwapPage() {
 
       const quoteResult = await getQuote(quoteRequest)
       setQuote(quoteResult)
-      setIsMultistep(false)
     } catch (err: any) {
       console.error('Failed to get quote:', err)
 
-      // Check if it's a "no quotes available" error - try multistep routes
+      // Check if it's a "no quotes available" error
       if (isNoQuotesAvailable(err)) {
-        console.log('No single-step quote available, trying multistep routes...')
-
-        try {
-          const fromAmountWei = parseUnits(amount, fromToken.decimals).toString()
-
-          const routesRequest: RoutesRequest = {
-            fromChainId,
-            toChainId,
-            fromTokenAddress: fromToken.address,
-            toTokenAddress: toToken.address,
-            fromAmount: fromAmountWei,
-            fromAddress: address,
-            options: {
-              slippage: 0.03,
-              allowSwitchChain: true, // Enable multistep routes
-            }
-          }
-
-          const routesResult = await getRoutes(routesRequest)
-
-          if (routesResult.routes && routesResult.routes.length > 0) {
-            // Use the first (best) route
-            const bestRoute = routesResult.routes[0]
-            setQuote(bestRoute)
-            setIsMultistep(bestRoute.steps.length > 1)
-            console.log(`Found ${bestRoute.steps.length}-step route`)
-          } else {
-            setNoQuoteAvailable(true)
-            setQuote(null)
-          }
-        } catch (routeErr: any) {
-          console.error('Failed to get multistep routes:', routeErr)
-          setNoQuoteAvailable(true)
-          setQuote(null)
-        }
+        setNoQuoteAvailable(true)
       } else if (isSameTokenError(err)) {
         // Special handling for same token error
         setError('You cannot swap the same token. Please select different tokens.')
-        setQuote(null)
       } else {
-        // Clean up error message for actual errors
-        const errorMsg = err.message || 'Failed to get quote'
-        const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
-        setError(cleanError || 'Unable to get quote. Please check your inputs and try again.')
-        setQuote(null)
+        // Check for invalid/denied token error
+        const invalidTokenCheck = isInvalidTokenError(err)
+        if (invalidTokenCheck.isInvalid) {
+          // Determine which token is problematic
+          let tokenName = 'The selected token'
+          if (invalidTokenCheck.tokenInfo) {
+            const chainId = invalidTokenCheck.tokenInfo.split('-')[0]
+            if (fromChainId?.toString() === chainId) {
+              tokenName = fromToken?.symbol || 'source token'
+            } else if (toChainId?.toString() === chainId) {
+              tokenName = toToken?.symbol || 'destination token'
+            }
+          }
+          setError(`${tokenName} is not supported or has been restricted. Please select a different token.`)
+        } else {
+          // Clean up error message for actual errors
+          const errorMsg = err.message || 'Failed to get quote'
+          const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
+          setError(cleanError || 'Unable to get quote. Please check your inputs and try again.')
+        }
       }
+      setQuote(null)
     } finally {
       setLoadingQuote(false)
     }
@@ -349,20 +328,36 @@ function SwapPage() {
     )
   }
 
+  // Helper function to detect invalid/denied token error
+  const isInvalidTokenError = (error: any): { isInvalid: boolean; tokenInfo?: string } => {
+    const errorMessage = error?.message || error?.toString() || ''
+    const errorLower = errorMessage.toLowerCase()
+
+    if (errorLower.includes('invalid or in deny list') ||
+        errorLower.includes('token') && (errorLower.includes('invalid') || errorLower.includes('deny'))) {
+      // Try to extract token address from error message
+      const tokenMatch = errorMessage.match(/Token ([0-9]+-0x[a-fA-F0-9]+)/)
+      return {
+        isInvalid: true,
+        tokenInfo: tokenMatch ? tokenMatch[1] : undefined
+      }
+    }
+
+    return { isInvalid: false }
+  }
+
   // Execute swap
   const handleSwap = async () => {
     if (!quote || !walletClient) return
 
     setExecuting(true)
-    setExecutionStatus(isMultistep ? 'Preparing multistep transaction...' : 'Preparing transaction...')
+    setExecutionStatus('Preparing transaction...')
     setError('')
     setUserCancelled(false)
     setTxHash('')
 
     try {
-      // For routes from getRoutes, quote is already a route object
-      // For quotes from getQuote, we need to convert it
-      const route = quote.steps ? quote : convertQuoteToRoute(quote)
+      const route = convertQuoteToRoute(quote)
 
       await executeRoute(route, {
         updateRouteHook: (updatedRoute: RouteExtended) => {
@@ -403,11 +398,27 @@ function SwapPage() {
         // Special handling for same token error
         setError('You cannot swap the same token. Please select different tokens.')
       } else {
-        // Show actual error for non-rejection errors
-        const errorMsg = err.message || 'Swap failed'
-        // Clean up technical details from error message
-        const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
-        setError(cleanError || 'Swap failed. Please try again.')
+        // Check for invalid/denied token error
+        const invalidTokenCheck = isInvalidTokenError(err)
+        if (invalidTokenCheck.isInvalid) {
+          // Determine which token is problematic
+          let tokenName = 'The selected token'
+          if (invalidTokenCheck.tokenInfo) {
+            const chainId = invalidTokenCheck.tokenInfo.split('-')[0]
+            if (fromChainId?.toString() === chainId) {
+              tokenName = fromToken?.symbol || 'source token'
+            } else if (toChainId?.toString() === chainId) {
+              tokenName = toToken?.symbol || 'destination token'
+            }
+          }
+          setError(`${tokenName} is not supported or has been restricted. Please select a different token.`)
+        } else {
+          // Show actual error for non-rejection errors
+          const errorMsg = err.message || 'Swap failed'
+          // Clean up technical details from error message
+          const cleanError = errorMsg.split('Details:')[0].replace(/\[.*?\]\s*/g, '').trim()
+          setError(cleanError || 'Swap failed. Please try again.')
+        }
       }
 
       setExecuting(false)
@@ -423,6 +434,11 @@ function SwapPage() {
     setToChainId(tempChain)
     setFromToken(toToken)
     setToToken(tempToken)
+    // Reset balance to trigger refresh
+    setFromTokenBalance('0')
+    // Clear quote and amount
+    setQuote(null)
+    setAmount('')
   }
 
   // Handle chain switch for swap
@@ -604,6 +620,8 @@ function SwapPage() {
                     setFromChainId(Number(e.target.value))
                     setFromToken(null)
                     setFromTokenBalance('0')
+                    setError('') // Clear any stale errors
+                    setQuote(null)
                   }}
                   style={{
                     width: "100%",
@@ -852,6 +870,8 @@ function SwapPage() {
                   onChange={(e) => {
                     setToChainId(Number(e.target.value))
                     setToToken(null)
+                    setError('') // Clear any stale errors
+                    setQuote(null)
                   }}
                   style={{
                     width: "100%",
@@ -981,10 +1001,7 @@ function SwapPage() {
                     {loadingQuote ? (
                       <span style={{ fontSize: "0.9rem", color: "hsl(var(--celo-brown))" }}>Loading...</span>
                     ) : quote && toToken ? (
-                      formatTokenAmount(
-                        quote.estimate?.toAmount || quote.toAmount,
-                        toToken.decimals
-                      )
+                      formatTokenAmount(quote.estimate.toAmount, toToken.decimals)
                     ) : (
                       '0.0'
                     )}
@@ -1000,19 +1017,6 @@ function SwapPage() {
                   padding: "1rem",
                   marginBottom: "1.5rem"
                 }}>
-                  {isMultistep && (
-                    <div style={{
-                      background: "hsl(var(--celo-yellow))",
-                      border: "2px solid hsl(var(--celo-black))",
-                      padding: "0.5rem",
-                      marginBottom: "0.75rem",
-                      fontSize: "0.75rem",
-                      textAlign: "center",
-                      fontWeight: "bold"
-                    }}>
-                      ⚡ MULTISTEP ROUTE ({quote.steps?.length || 2} transactions required)
-                    </div>
-                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                     <span className="text-body-heavy" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>
                       Route
@@ -1026,7 +1030,7 @@ function SwapPage() {
                       Est. Gas
                     </span>
                     <span className="text-body-black" style={{ fontSize: "0.8rem" }}>
-                      ${quote.estimate?.gasCosts?.[0]?.amountUSD || quote.gasCostUSD || 'N/A'}
+                      ${quote.estimate?.gasCosts?.[0]?.amountUSD || 'N/A'}
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1034,7 +1038,7 @@ function SwapPage() {
                       Est. Time
                     </span>
                     <span className="text-body-black" style={{ fontSize: "0.8rem" }}>
-                      ~{Math.ceil((quote.estimate?.executionDuration || quote.steps?.[0]?.estimate?.executionDuration || 60) / 60)} min
+                      ~{Math.ceil((quote.estimate?.executionDuration || 60) / 60)} min
                     </span>
                   </div>
                 </div>
@@ -1195,11 +1199,11 @@ function SwapPage() {
                   width: "100%",
                   padding: "1rem",
                   border: "3px solid hsl(var(--celo-black))",
-                  background: (!isConnected || ((!quote || needsChainSwitch) && !needsChainSwitch) || executing || loadingQuote) 
-                    ? needsChainSwitch ? "hsl(var(--celo-yellow))" : "hsl(var(--celo-tan-2))" 
+                  background: (!isConnected || ((!quote || needsChainSwitch) && !needsChainSwitch) || executing || loadingQuote)
+                    ? needsChainSwitch ? "hsl(var(--celo-yellow))" : "hsl(var(--celo-tan-2))"
                     : "hsl(var(--celo-green))",
-                  color: (!isConnected || (!quote && !needsChainSwitch) || executing || loadingQuote) 
-                    ? "hsl(var(--celo-black))" 
+                  color: (!isConnected || (!quote && !needsChainSwitch) || executing || loadingQuote)
+                    ? "hsl(var(--celo-black))"
                     : "hsl(var(--celo-black))",
                   fontSize: "1.1rem",
                   fontFamily: "var(--font-body)",
@@ -1221,11 +1225,11 @@ function SwapPage() {
                   e.currentTarget.style.boxShadow = "4px 4px 0px hsl(var(--celo-black))"
                 }}
               >
-                {!isConnected ? 'Connect Wallet' : 
+                {!isConnected ? 'Connect Wallet' :
                  needsChainSwitch ? `Switch to ${chains.find(c => c.id === fromChainId)?.name || 'Chain'}` :
-                 executing ? 'Swapping...' : 
+                 executing ? 'Swapping...' :
                  loadingQuote ? 'Getting Quote...' :
-                 !quote ? 'Enter Amount' : 
+                 !quote ? 'Enter Amount' :
                  'Swap'}
               </button>
             </>
