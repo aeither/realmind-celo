@@ -1,27 +1,46 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import GlobalHeader from '../components/GlobalHeader'
-import BottomNavigation from '../components/BottomNavigation'
-import { bunnyGameABI } from '../abis/bunnyGameABI'
-import { retentionSystemABI } from '../abis/retentionSystemABI'
-import { eggTokenABI } from '../abis/eggTokenABI'
-import { getContractAddresses } from '../libs/constants'
 import { formatEther } from 'viem'
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import { bunnyGameABI } from '../abis/bunnyGameABI'
+import { eggTokenABI } from '../abis/eggTokenABI'
+import { retentionSystemABI } from '../abis/retentionSystemABI'
+import BottomNavigation from '../components/BottomNavigation'
+import GlobalHeader from '../components/GlobalHeader'
 import { useFarcaster } from '../contexts/FarcasterContext'
+import { getContractAddresses } from '../libs/constants'
 
 function BunnyGamePage() {
   const { address, chain } = useAccount()
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
   const [referrer, setReferrer] = useState('')
   const [pendingAction, setPendingAction] = useState<string | null>(null)
+  const [universalLink, setUniversalLink] = useState('')
   const { composeCast } = useFarcaster()
   
   const contracts = chain ? getContractAddresses(chain.id) : null
   const bunnyGameAddress = contracts?.bunnyGameContractAddress as `0x${string}` | undefined
   const retentionAddress = contracts?.retentionSystemContractAddress as `0x${string}` | undefined
   const eggTokenAddress = contracts?.eggTokenContractAddress as `0x${string}` | undefined
+
+  // Initialize Farcaster Universal Link for sharing
+  useEffect(() => {
+    const initUniversalLink = async () => {
+      // Farcaster Mini App base URL
+      const baseUrl = 'https://farcaster.xyz/miniapps/fSkzq8nGNJ4C/realmind'
+
+      // Get current path and query params
+      const currentPath = window.location.pathname.replace(/^\//, '') // Remove leading slash
+      const currentSearch = window.location.search
+
+      // Construct full universal link
+      const fullLink = currentPath ? `${baseUrl}/${currentPath}${currentSearch}` : baseUrl
+      setUniversalLink(fullLink)
+    }
+
+    initUniversalLink()
+  }, [])
 
   // BunnyGame reads - with refetchInterval for live updates
   const { data: bunnyData, refetch: refetchBunny } = useReadContract({
@@ -243,19 +262,33 @@ function BunnyGamePage() {
 
   // Share referral link via Farcaster or clipboard
   const handleShareReferral = async () => {
-    if (!address) return
-    
-    const referralLink = `${window.location.origin}/bunny-game?ref=${address}`
+    if (!address || !universalLink) return
+
+    // Construct referral link using Farcaster Universal Link
+    const baseUrl = 'https://farcaster.xyz/miniapps/fSkzq8nGNJ4C/realmind'
+    const referralLink = `${baseUrl}/bunny-game?ref=${address}`
     const shareText = `🐰 Join me on Bunny Game! Tap your bunny, earn eggs, and get bonus rewards with my referral link! 🥚\n\n${referralLink}`
-    
+
     try {
-      // Try Farcaster first
-      await composeCast(shareText)
-      toast.success('📤 Share opened!')
-    } catch {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(referralLink)
-      toast.success('📋 Referral link copied!')
+      // Try native share API first (works in Farcaster and modern browsers)
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Join Bunny Game!',
+          text: shareText,
+          url: referralLink
+        })
+        toast.success('📤 Shared successfully!')
+      } else {
+        // Fallback to Farcaster compose cast
+        await composeCast(shareText)
+        toast.success('📤 Share opened!')
+      }
+    } catch (err: any) {
+      // If user cancels or if share fails, copy to clipboard
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(referralLink)
+        toast.success('📋 Referral link copied!')
+      }
     }
   }
 
