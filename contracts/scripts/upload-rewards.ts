@@ -34,7 +34,7 @@ function readRewardsJSON(filePath: string): RewardsData {
 
 function generateFoundryScript(data: RewardsData, contractAddress: string): string {
   const chunks: Array<{ addresses: string[]; amounts: string[] }> = [];
-  
+
   // Split into chunks
   for (let i = 0; i < data.rewards.length; i += CHUNK_SIZE) {
     const chunk = data.rewards.slice(i, i + CHUNK_SIZE);
@@ -43,11 +43,11 @@ function generateFoundryScript(data: RewardsData, contractAddress: string): stri
       amounts: chunk.map(r => r.amount)
     });
   }
-  
+
   // Calculate total for funding
   const totalWei = data.rewards.reduce((sum, r) => sum + BigInt(r.amount), BigInt(0));
   const totalEther = Number(totalWei) / 1e18;
-  
+
   let script = `// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
@@ -84,15 +84,15 @@ contract SetSeasonRewardsScript is Script {
             address[] memory users = new address[](${chunk.addresses.length});
             uint256[] memory amounts = new uint256[](${chunk.amounts.length});
 `;
-    
+
     chunk.addresses.forEach((addr, i) => {
       script += `            users[${i}] = ${addr};\n`;
     });
-    
+
     chunk.amounts.forEach((amt, i) => {
       script += `            amounts[${i}] = ${amt};\n`;
     });
-    
+
     script += `
             seasonReward.setSeasonRewards(users, amounts);
             console.log("Batch ${index + 1} complete: ${chunk.addresses.length} recipients");
@@ -115,7 +115,7 @@ contract SetSeasonRewardsScript is Script {
 
 function generateCastCommands(data: RewardsData, contractAddress: string): string {
   const chunks: Array<{ addresses: string[]; amounts: string[] }> = [];
-  
+
   for (let i = 0; i < data.rewards.length; i += CHUNK_SIZE) {
     const chunk = data.rewards.slice(i, i + CHUNK_SIZE);
     chunks.push({
@@ -123,7 +123,7 @@ function generateCastCommands(data: RewardsData, contractAddress: string): strin
       amounts: chunk.map(r => r.amount)
     });
   }
-  
+
   let commands = `#!/bin/bash
 # Generated Cast commands to set rewards
 # Generated at: ${data.generatedAt}
@@ -140,7 +140,7 @@ CONTRACT="${contractAddress}"
     // Format arrays for cast
     const addressArray = `[${chunk.addresses.join(',')}]`;
     const amountArray = `[${chunk.amounts.join(',')}]`;
-    
+
     commands += `
 # Batch ${index + 1} of ${chunks.length} (${chunk.addresses.length} recipients)
 echo "Processing batch ${index + 1}..."
@@ -167,12 +167,12 @@ function generateAddressesAndAmounts(data: RewardsData): { addresses: string; am
 // Main execution
 function main() {
   const args = process.argv.slice(2);
-  
+
   let inputFile = '';
   let outputFile = '';
   let contractAddress = '0x0000000000000000000000000000000000000000';
   let format = 'foundry'; // foundry, cast, or raw
-  
+
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--input' && args[i + 1]) {
       inputFile = args[i + 1];
@@ -188,7 +188,7 @@ function main() {
       i++;
     }
   }
-  
+
   if (!inputFile) {
     console.log(`
 Upload Script: Generate contract calls from processed rewards JSON
@@ -211,20 +211,20 @@ Examples:
 `);
     process.exit(1);
   }
-  
+
   console.log(`\n📂 Reading rewards: ${inputFile}`);
   const data = readRewardsJSON(inputFile);
   console.log(`   Found ${data.totalRecipients} recipients`);
   console.log(`   Generated at: ${data.generatedAt}`);
-  
+
   // Calculate total
   const totalWei = data.rewards.reduce((sum, r) => sum + BigInt(r.amount), BigInt(0));
   const totalEther = Number(totalWei) / 1e18;
   console.log(`   Total rewards: ${totalEther.toFixed(6)} native tokens`);
-  
+
   let output: string;
   let defaultExt: string;
-  
+
   switch (format) {
     case 'cast':
       output = generateCastCommands(data, contractAddress);
@@ -240,7 +240,7 @@ Examples:
       output = generateFoundryScript(data, contractAddress);
       defaultExt = '.s.sol';
   }
-  
+
   if (outputFile) {
     const finalPath = outputFile.includes('.') ? outputFile : outputFile + defaultExt;
     fs.writeFileSync(finalPath, output);
@@ -249,7 +249,7 @@ Examples:
     console.log(`\n--- Generated Output ---\n`);
     console.log(output);
   }
-  
+
   console.log(`\n📋 Next steps:`);
   console.log(`   1. Fund the contract with at least ${totalEther.toFixed(6)} native tokens`);
   console.log(`   2. Run the generated script/commands`);
@@ -257,4 +257,5 @@ Examples:
 }
 
 main();
+
 

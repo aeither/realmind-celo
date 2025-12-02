@@ -52,9 +52,23 @@ contract RetentionSystem {
     uint256 public constant STREAK_THRESHOLD_2 = 3;
     uint256 public constant MAX_STREAK = 7;
 
-    event CheckedIn(address indexed user, uint256 streak, uint256 eggsEarned, uint256 timestamp);
-    event ReferralCompleted(address indexed referrer, address indexed referred, uint256 bonusEggs, uint256 timestamp);
-    event StreakBroken(address indexed user, uint256 previousStreak, uint256 timestamp);
+    event CheckedIn(
+        address indexed user,
+        uint256 streak,
+        uint256 eggsEarned,
+        uint256 timestamp
+    );
+    event ReferralCompleted(
+        address indexed referrer,
+        address indexed referred,
+        uint256 bonusEggs,
+        uint256 timestamp
+    );
+    event StreakBroken(
+        address indexed user,
+        uint256 previousStreak,
+        uint256 timestamp
+    );
 
     error AlreadyCheckedInToday();
     error CannotReferSelf();
@@ -82,7 +96,12 @@ contract RetentionSystem {
         eggToken.mint(referrer, REFERRAL_BONUS);
         referralCount[referrer]++;
 
-        emit ReferralCompleted(referrer, msg.sender, REFERRAL_BONUS, block.timestamp);
+        emit ReferralCompleted(
+            referrer,
+            msg.sender,
+            REFERRAL_BONUS,
+            block.timestamp
+        );
     }
 
     function _processCheckIn(address user) internal {
@@ -119,18 +138,26 @@ contract RetentionSystem {
         return BASE_EGGS;
     }
 
-    function getUserStats(address user) external view returns (
-        uint256 lastCheck,
-        uint256 streak,
-        address referrer,
-        uint256 referrals,
-        bool canCheckIn
-    ) {
+    function getUserStats(
+        address user
+    )
+        external
+        view
+        returns (
+            uint256 lastCheck,
+            uint256 streak,
+            address referrer,
+            uint256 referrals,
+            bool canCheckIn
+        )
+    {
         lastCheck = lastCheckIn[user];
         streak = currentStreak[user];
         referrer = referredBy[user];
         referrals = referralCount[user];
-        canCheckIn = (lastCheck == 0) || (block.timestamp - lastCheck >= ONE_DAY);
+        canCheckIn =
+            (lastCheck == 0) ||
+            (block.timestamp - lastCheck >= ONE_DAY);
     }
 
     function getNextReward(address user) external view returns (uint256) {
@@ -154,7 +181,9 @@ contract RetentionSystem {
         return (block.timestamp - lastCheckIn[user]) > 2 * ONE_DAY;
     }
 
-    function timeUntilNextCheckIn(address user) external view returns (uint256) {
+    function timeUntilNextCheckIn(
+        address user
+    ) external view returns (uint256) {
         if (lastCheckIn[user] == 0) return 0;
         uint256 timeSinceLastCheckIn = block.timestamp - lastCheckIn[user];
         if (timeSinceLastCheckIn >= ONE_DAY) return 0;
@@ -189,10 +218,17 @@ contract BunnyGame is ReentrancyGuard {
 
     mapping(address => Bunny) public bunnies;
 
-    event ActionPerformed(address indexed user, string actionType, uint256 newHappiness);
+    event ActionPerformed(
+        address indexed user,
+        string actionType,
+        uint256 newHappiness
+    );
     event EggLaid(address indexed user, uint256 amount, uint256 totalEggs);
     event BunnyHappinessReset(address indexed user);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     constructor(address _eggTokenAddress) {
         eggToken = EggToken(_eggTokenAddress);
@@ -231,7 +267,9 @@ contract BunnyGame is ReentrancyGuard {
             if (bunny.claimableActions > MAX_CLAIMABLE_ACTIONS) {
                 bunny.claimableActions = MAX_CLAIMABLE_ACTIONS;
             }
-            bunny.lastActionUpdate += accumulatedActions * ACTION_ACCUMULATION_TIME;
+            bunny.lastActionUpdate +=
+                accumulatedActions *
+                ACTION_ACCUMULATION_TIME;
         }
     }
 
@@ -242,7 +280,10 @@ contract BunnyGame is ReentrancyGuard {
             bunny.instantActionsRemaining--;
         } else {
             _updateClaimableActions(user);
-            require(bunny.claimableActions > 0, "BunnyGame: No actions available");
+            require(
+                bunny.claimableActions > 0,
+                "BunnyGame: No actions available"
+            );
             bunny.claimableActions--;
         }
     }
@@ -266,22 +307,28 @@ contract BunnyGame is ReentrancyGuard {
         _increaseHappiness(msg.sender, "Pet");
     }
 
-    function _increaseHappiness(address user, string memory actionType) internal {
+    function _increaseHappiness(
+        address user,
+        string memory actionType
+    ) internal {
         Bunny storage bunny = bunnies[user];
-        
+
         if (bunny.happiness + HAPPINESS_PER_ACTION >= MAX_HAPPINESS) {
             bunny.happiness = MAX_HAPPINESS;
         } else {
             bunny.happiness += HAPPINESS_PER_ACTION;
         }
-        
+
         emit ActionPerformed(user, actionType, bunny.happiness);
     }
 
     /// @notice Lay an egg when bunny happiness reaches 100
     function layEgg() external nonReentrant {
         Bunny storage bunny = bunnies[msg.sender];
-        require(bunny.happiness >= MAX_HAPPINESS, "BunnyGame: Bunny happiness must be 100 to lay egg");
+        require(
+            bunny.happiness >= MAX_HAPPINESS,
+            "BunnyGame: Bunny happiness must be 100 to lay egg"
+        );
 
         bunny.happiness = 0;
         bunny.totalEggsLaid += 1;
@@ -293,7 +340,10 @@ contract BunnyGame is ReentrancyGuard {
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "BunnyGame: New owner is the zero address");
+        require(
+            newOwner != address(0),
+            "BunnyGame: New owner is the zero address"
+        );
         address oldOwner = owner;
         owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
@@ -301,14 +351,20 @@ contract BunnyGame is ReentrancyGuard {
 
     // ========== VIEW FUNCTIONS ==========
 
-    function getBunny(address user) external view returns (
-        uint256 happiness,
-        uint256 claimableActions,
-        uint256 lastActionUpdate,
-        uint256 totalEggsLaid,
-        uint256 instantActionsRemaining,
-        bool initialized
-    ) {
+    function getBunny(
+        address user
+    )
+        external
+        view
+        returns (
+            uint256 happiness,
+            uint256 claimableActions,
+            uint256 lastActionUpdate,
+            uint256 totalEggsLaid,
+            uint256 instantActionsRemaining,
+            bool initialized
+        )
+    {
         Bunny memory bunny = bunnies[user];
 
         uint256 currentClaimable = bunny.claimableActions;
@@ -347,7 +403,9 @@ contract BunnyGame is ReentrancyGuard {
         return currentClaimable > 0;
     }
 
-    function getTimeUntilNextAction(address user) external view returns (uint256) {
+    function getTimeUntilNextAction(
+        address user
+    ) external view returns (uint256) {
         Bunny memory bunny = bunnies[user];
 
         if (!bunny.initialized || bunny.instantActionsRemaining > 0) return 0;
@@ -361,7 +419,8 @@ contract BunnyGame is ReentrancyGuard {
 
         if (currentClaimable >= MAX_CLAIMABLE_ACTIONS) return 0;
 
-        uint256 timeSinceLastAccumulation = (block.timestamp - bunny.lastActionUpdate) % ACTION_ACCUMULATION_TIME;
+        uint256 timeSinceLastAccumulation = (block.timestamp -
+            bunny.lastActionUpdate) % ACTION_ACCUMULATION_TIME;
         return ACTION_ACCUMULATION_TIME - timeSinceLastAccumulation;
     }
 
@@ -371,8 +430,9 @@ contract BunnyGame is ReentrancyGuard {
 
     function getTotalActions(address user) external view returns (uint256) {
         Bunny memory bunny = bunnies[user];
-        if (!bunny.initialized) return FREE_INSTANT_ACTIONS + MAX_CLAIMABLE_ACTIONS;
-        
+        if (!bunny.initialized)
+            return FREE_INSTANT_ACTIONS + MAX_CLAIMABLE_ACTIONS;
+
         uint256 currentClaimable = bunny.claimableActions;
         if (bunny.lastActionUpdate > 0) {
             uint256 timePassed = block.timestamp - bunny.lastActionUpdate;
@@ -382,8 +442,7 @@ contract BunnyGame is ReentrancyGuard {
                 currentClaimable = MAX_CLAIMABLE_ACTIONS;
             }
         }
-        
+
         return bunny.instantActionsRemaining + currentClaimable;
     }
 }
-

@@ -116,13 +116,7 @@ contract BunnyGameTest is Test {
         // Warp 30 hours (should accumulate 15 actions, but capped at 10)
         vm.warp(block.timestamp + 30 hours);
 
-        (
-            ,
-            uint256 claimableActions,
-            ,
-            ,
-            ,
-        ) = bunnyGame.getBunny(player1);
+        (, uint256 claimableActions, , , , ) = bunnyGame.getBunny(player1);
 
         assertEq(claimableActions, 10); // Capped at max
     }
@@ -165,7 +159,9 @@ contract BunnyGameTest is Test {
 
         assertEq(eggToken.balanceOf(player1), 1 ether);
 
-        (uint256 happiness, , , uint256 totalEggsLaid, , ) = bunnyGame.getBunny(player1);
+        (uint256 happiness, , , uint256 totalEggsLaid, , ) = bunnyGame.getBunny(
+            player1
+        );
         assertEq(happiness, 0);
         assertEq(totalEggsLaid, 1);
     }
@@ -184,17 +180,17 @@ contract BunnyGameTest is Test {
     function testAllActionTypesWork() public {
         vm.prank(player1);
         bunnyGame.tapBunny();
-        (uint256 h1,,,,, ) = bunnyGame.getBunny(player1);
+        (uint256 h1, , , , , ) = bunnyGame.getBunny(player1);
         assertEq(h1, 10);
 
         vm.prank(player1);
         bunnyGame.feedBunny();
-        (uint256 h2,,,,, ) = bunnyGame.getBunny(player1);
+        (uint256 h2, , , , , ) = bunnyGame.getBunny(player1);
         assertEq(h2, 20);
 
         vm.prank(player1);
         bunnyGame.petBunny();
-        (uint256 h3,,,,, ) = bunnyGame.getBunny(player1);
+        (uint256 h3, , , , , ) = bunnyGame.getBunny(player1);
         assertEq(h3, 30);
     }
 
@@ -227,7 +223,7 @@ contract BunnyGameTest is Test {
         // After initialization and one action
         vm.prank(player1);
         bunnyGame.tapBunny();
-        
+
         assertEq(bunnyGame.getTotalActions(player1), 19);
     }
 
@@ -309,7 +305,13 @@ contract RetentionSystemTest is Test {
         vm.prank(player1);
         retentionSystem.checkIn();
 
-        (uint256 lastCheck, uint256 streak, , , bool canCheckIn) = retentionSystem.getUserStats(player1);
+        (
+            uint256 lastCheck,
+            uint256 streak,
+            ,
+            ,
+            bool canCheckIn
+        ) = retentionSystem.getUserStats(player1);
 
         assertEq(streak, 1);
         assertEq(lastCheck, block.timestamp);
@@ -392,13 +394,21 @@ contract RetentionSystemTest is Test {
 
         // Try to check in again immediately
         vm.prank(player1);
-        vm.expectRevert(abi.encodeWithSelector(RetentionSystem.AlreadyCheckedInToday.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RetentionSystem.AlreadyCheckedInToday.selector
+            )
+        );
         retentionSystem.checkIn();
 
         // Try after 19 hours (still within 20 hour window)
         skip(19 hours);
         vm.prank(player1);
-        vm.expectRevert(abi.encodeWithSelector(RetentionSystem.AlreadyCheckedInToday.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RetentionSystem.AlreadyCheckedInToday.selector
+            )
+        );
         retentionSystem.checkIn();
 
         // Should work after 20 hours
@@ -439,7 +449,9 @@ contract RetentionSystemTest is Test {
 
         // Try to refer self
         vm.prank(player1);
-        vm.expectRevert(abi.encodeWithSelector(RetentionSystem.CannotReferSelf.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RetentionSystem.CannotReferSelf.selector)
+        );
         retentionSystem.checkInWithReferral(player1);
     }
 
@@ -462,14 +474,18 @@ contract RetentionSystemTest is Test {
         skip(20 hours);
 
         vm.prank(player1);
-        vm.expectRevert(abi.encodeWithSelector(RetentionSystem.AlreadyReferred.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RetentionSystem.AlreadyReferred.selector)
+        );
         retentionSystem.checkInWithReferral(player3);
     }
 
     function testReferrerMustBeActive() public {
         // Try to use player2 as referrer without player2 having checked in
         vm.prank(player1);
-        vm.expectRevert(abi.encodeWithSelector(RetentionSystem.ReferrerNotActive.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(RetentionSystem.ReferrerNotActive.selector)
+        );
         retentionSystem.checkInWithReferral(player2);
     }
 
@@ -589,17 +605,19 @@ contract RetentionSystemTest is Test {
         assertEq(eggToken.balanceOf(player3), 6 ether);
 
         // Check stats
-        (, uint256 streak1, , uint256 referrals1, ) = retentionSystem.getUserStats(player1);
+        (, uint256 streak1, , uint256 referrals1, ) = retentionSystem
+            .getUserStats(player1);
         assertEq(streak1, 7);
         assertEq(referrals1, 2);
 
-        (, uint256 streak2, address referrer2, , ) = retentionSystem.getUserStats(player2);
+        (, uint256 streak2, address referrer2, , ) = retentionSystem
+            .getUserStats(player2);
         assertEq(streak2, 1);
         assertEq(referrer2, player1);
 
-        (, uint256 streak3, address referrer3, , ) = retentionSystem.getUserStats(player3);
+        (, uint256 streak3, address referrer3, , ) = retentionSystem
+            .getUserStats(player3);
         assertEq(streak3, 1);
         assertEq(referrer3, player1);
     }
 }
-
