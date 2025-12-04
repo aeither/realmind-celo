@@ -446,3 +446,4 @@ contract BunnyGame is ReentrancyGuard {
         return bunny.instantActionsRemaining + currentClaimable;
     }
 }
+
