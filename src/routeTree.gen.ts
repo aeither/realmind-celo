@@ -19,6 +19,7 @@ import { Route as ContractRouteImport } from './routes/contract'
 import { Route as BunnyGameRouteImport } from './routes/bunny-game'
 import { Route as BackendDemoRouteImport } from './routes/backend-demo'
 import { Route as AiQuizRouteImport } from './routes/ai-quiz'
+import { Route as AaveRouteImport } from './routes/aave'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SwapRoute = SwapRouteImport.update({
@@ -71,6 +72,11 @@ const AiQuizRoute = AiQuizRouteImport.update({
   path: '/ai-quiz',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AaveRoute = AaveRouteImport.update({
+  id: '/aave',
+  path: '/aave',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -79,6 +85,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aave': typeof AaveRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
   '/bunny-game': typeof BunnyGameRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aave': typeof AaveRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
   '/bunny-game': typeof BunnyGameRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aave': typeof AaveRoute
   '/ai-quiz': typeof AiQuizRoute
   '/backend-demo': typeof BackendDemoRoute
   '/bunny-game': typeof BunnyGameRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/aave'
     | '/ai-quiz'
     | '/backend-demo'
     | '/bunny-game'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/aave'
     | '/ai-quiz'
     | '/backend-demo'
     | '/bunny-game'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/aave'
     | '/ai-quiz'
     | '/backend-demo'
     | '/bunny-game'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AaveRoute: typeof AaveRoute
   AiQuizRoute: typeof AiQuizRoute
   BackendDemoRoute: typeof BackendDemoRoute
   BunnyGameRoute: typeof BunnyGameRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiQuizRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aave': {
+      id: '/aave'
+      path: '/aave'
+      fullPath: '/aave'
+      preLoaderRoute: typeof AaveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -257,6 +277,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AaveRoute: AaveRoute,
   AiQuizRoute: AiQuizRoute,
   BackendDemoRoute: BackendDemoRoute,
   BunnyGameRoute: BunnyGameRoute,

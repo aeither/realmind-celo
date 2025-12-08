@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { WagmiProvider, cookieToInitialState } from 'wagmi'
 import { OnchainKitProvider } from '@coinbase/onchainkit'
+import { AaveProvider } from '@aave/react'
 import { base } from 'wagmi/chains'
 import { routeTree } from './routeTree.gen'
 import { config } from './wagmi'
 import { FarcasterProvider } from './contexts/FarcasterContext'
+import { aaveClient } from './aaveClient'
 
 const router = createRouter({ routeTree })
 
@@ -38,12 +40,13 @@ function App() {
     <FarcasterProvider>
       <WagmiProvider config={config} initialState={initialState}>
         <QueryClientProvider client={queryClient}>
-          <OnchainKitProvider
-            apiKey={import.meta.env.VITE_ONCHAINKIT_API_KEY}
-            chain={base}
-          >
-            <RouterProvider router={router} />
-            <Toaster
+          <AaveProvider client={aaveClient}>
+            <OnchainKitProvider
+              apiKey={import.meta.env.VITE_ONCHAINKIT_API_KEY}
+              chain={base}
+            >
+              <RouterProvider router={router} />
+              <Toaster
               theme="light"
               position="bottom-right"
               toastOptions={{
@@ -55,7 +58,8 @@ function App() {
                 },
               }}
             />
-          </OnchainKitProvider>
+            </OnchainKitProvider>
+          </AaveProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </FarcasterProvider>

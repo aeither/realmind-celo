@@ -18,6 +18,12 @@ export default function BottomNavigation() {
       path: '/swap'
     },
     {
+      id: 'aave',
+      label: 'Aave',
+      icon: '🏦',
+      path: '/aave'
+    },
+    {
       id: 'leaderboard',
       label: 'Ranks',
       icon: '🏆',
@@ -66,8 +72,8 @@ export default function BottomNavigation() {
             cursor: 'pointer',
             color: isActive(item.path) ? 'hsl(var(--celo-black))' : 'hsl(var(--celo-black))',
             transition: 'var(--transition-fast)',
-            width: '60px',
-            height: '60px',
+            width: '55px',
+            height: '55px',
             flex: '0 0 auto',
             fontFamily: 'var(--font-body)',
             fontWeight: 'var(--font-weight-body-black)',
