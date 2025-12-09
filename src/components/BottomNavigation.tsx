@@ -12,6 +12,12 @@ export default function BottomNavigation() {
       path: '/'
     },
     {
+      id: 'quiz',
+      label: 'Quiz',
+      icon: '🧠',
+      path: '/quiz'
+    },
+    {
       id: 'swap',
       label: 'Swap',
       icon: '🔄',
@@ -30,10 +36,10 @@ export default function BottomNavigation() {
       path: '/leaderboard'
     },
     {
-      id: 'profile',
-      label: 'Profile',
-      icon: '👤',
-      path: '/profile'
+      id: 'launchpad',
+      label: 'Launch',
+      icon: '🚀',
+      path: '/launchpad'
     }
   ]
 

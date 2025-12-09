@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SwapRouteImport } from './routes/swap'
 import { Route as QuizGameRouteImport } from './routes/quiz-game'
+import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as LaunchpadRouteImport } from './routes/launchpad'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ContractRouteImport } from './routes/contract'
@@ -32,6 +34,11 @@ const QuizGameRoute = QuizGameRouteImport.update({
   path: '/quiz-game',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -40,6 +47,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaunchpadRoute = LaunchpadRouteImport.update({
+  id: '/launchpad',
+  path: '/launchpad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LandingRoute = LandingRouteImport.update({
@@ -92,8 +104,10 @@ export interface FileRoutesByFullPath {
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
+  '/launchpad': typeof LaunchpadRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/quiz': typeof QuizRoute
   '/quiz-game': typeof QuizGameRoute
   '/swap': typeof SwapRoute
 }
@@ -106,8 +120,10 @@ export interface FileRoutesByTo {
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
+  '/launchpad': typeof LaunchpadRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/quiz': typeof QuizRoute
   '/quiz-game': typeof QuizGameRoute
   '/swap': typeof SwapRoute
 }
@@ -121,8 +137,10 @@ export interface FileRoutesById {
   '/contract': typeof ContractRoute
   '/demo': typeof DemoRoute
   '/landing': typeof LandingRoute
+  '/launchpad': typeof LaunchpadRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/quiz': typeof QuizRoute
   '/quiz-game': typeof QuizGameRoute
   '/swap': typeof SwapRoute
 }
@@ -137,8 +155,10 @@ export interface FileRouteTypes {
     | '/contract'
     | '/demo'
     | '/landing'
+    | '/launchpad'
     | '/leaderboard'
     | '/profile'
+    | '/quiz'
     | '/quiz-game'
     | '/swap'
   fileRoutesByTo: FileRoutesByTo
@@ -151,8 +171,10 @@ export interface FileRouteTypes {
     | '/contract'
     | '/demo'
     | '/landing'
+    | '/launchpad'
     | '/leaderboard'
     | '/profile'
+    | '/quiz'
     | '/quiz-game'
     | '/swap'
   id:
@@ -165,8 +187,10 @@ export interface FileRouteTypes {
     | '/contract'
     | '/demo'
     | '/landing'
+    | '/launchpad'
     | '/leaderboard'
     | '/profile'
+    | '/quiz'
     | '/quiz-game'
     | '/swap'
   fileRoutesById: FileRoutesById
@@ -180,8 +204,10 @@ export interface RootRouteChildren {
   ContractRoute: typeof ContractRoute
   DemoRoute: typeof DemoRoute
   LandingRoute: typeof LandingRoute
+  LaunchpadRoute: typeof LaunchpadRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ProfileRoute: typeof ProfileRoute
+  QuizRoute: typeof QuizRoute
   QuizGameRoute: typeof QuizGameRoute
   SwapRoute: typeof SwapRoute
 }
@@ -202,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuizGameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -214,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/launchpad': {
+      id: '/launchpad'
+      path: '/launchpad'
+      fullPath: '/launchpad'
+      preLoaderRoute: typeof LaunchpadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/landing': {
@@ -284,8 +324,10 @@ const rootRouteChildren: RootRouteChildren = {
   ContractRoute: ContractRoute,
   DemoRoute: DemoRoute,
   LandingRoute: LandingRoute,
+  LaunchpadRoute: LaunchpadRoute,
   LeaderboardRoute: LeaderboardRoute,
   ProfileRoute: ProfileRoute,
+  QuizRoute: QuizRoute,
   QuizGameRoute: QuizGameRoute,
   SwapRoute: SwapRoute,
 }

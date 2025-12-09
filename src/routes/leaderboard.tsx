@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useConnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useState, useEffect } from 'react'
 import GlobalHeader from '../components/GlobalHeader'
 import BottomNavigation from '../components/BottomNavigation'
@@ -19,6 +19,7 @@ const formatEndDate = (date: Date) => {
 
 function LeaderboardPage() {
   const { chain, address } = useAccount()
+  const { connect, connectors, status: connectStatus } = useConnect()
   const navigate = useNavigate()
   const [holders, setHolders] = useState<TokenHolder[]>([])
   const [loading, setLoading] = useState(false)
@@ -28,6 +29,7 @@ function LeaderboardPage() {
   const [userRank, setUserRank] = useState<number | null>(null)
   const [showTooltip, setShowTooltip] = useState<string | null>(null)
   const [claimTxHash, setClaimTxHash] = useState<`0x${string}` | undefined>()
+  const [optimisticClaimed, setOptimisticClaimed] = useState(false)
 
   // Get contract addresses and rewards config based on current chain
   const contractAddresses = chain ? getContractAddresses(chain.id) : null
@@ -70,16 +72,23 @@ function LeaderboardPage() {
   useEffect(() => {
     if (isClaimSuccess) {
       refetchClaimStatus()
+      setOptimisticClaimed(true)
       setClaimTxHash(undefined)
     }
   }, [isClaimSuccess])
+
+  // Reset optimistic state when user changes
+  useEffect(() => {
+    setOptimisticClaimed(false)
+  }, [address])
 
   // Parse claim status
   const rewardAmount = claimStatus ? claimStatus[0] : BigInt(0)
   const hasClaimed = claimStatus ? claimStatus[1] : false
   const canClaim = claimStatus ? claimStatus[2] : false
+  const isClaimed = hasClaimed || optimisticClaimed
   const hasSeasonRewardContract = seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
-  const canPressClaim = !!address && !!seasonRewardAddress && canClaim
+  const canPressClaim = !!address && !!seasonRewardAddress && canClaim && !isClaimed
   const handleClaimReward = () => {
     if (!seasonRewardAddress || !canPressClaim) return
     writeContract({
@@ -94,12 +103,12 @@ function LeaderboardPage() {
     if (isClaimPending || isClaimConfirming) return '⏳ Claiming...'
     if (!hasSeasonRewardContract) return 'Rewards not ready'
     if (!address) return 'Connect wallet to claim'
-    if (hasClaimed) return 'Already claimed'
+    if (isClaimed) return 'Reward claimed'
     if (rewardAmount === BigInt(0)) return 'Nothing to claim'
     if (isDistributionActive === false) return 'Claim period ended'
     return `Claim ${formatEther(rewardAmount)} ${rewardsConfig.currency}`
   })()
-  const claimButtonDisabled = isClaimPending || isClaimConfirming || !canPressClaim
+  const claimButtonDisabled = isClaimPending || isClaimConfirming || !canPressClaim || isClaimed
 
   const fetchLeaderboard = async () => {
     if (!chain || !contractAddresses) {
@@ -173,6 +182,7 @@ function LeaderboardPage() {
   }, [chain, contractAddresses])
 
   const chainName = chain?.name || 'Unknown'
+  const primaryConnector = connectors[0]
 
   return (
     <div style={{
@@ -191,6 +201,35 @@ function LeaderboardPage() {
       }}>
         {/* Bold Header Section */}
         <div style={{ marginBottom: "1.5rem" }}>
+          {!address && (
+            <div style={{
+              background: 'white',
+              border: '3px dashed hsl(var(--celo-black))',
+              padding: '1rem',
+              borderRadius: '16px',
+              marginBottom: '1rem',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))',
+              textAlign: 'center'
+            }}>
+              <h3 style={{ margin: '0 0 0.4rem 0' }}>Connect to see your rank & rewards</h3>
+              <p style={{ margin: 0, color: '#4b5563', fontWeight: 600 }}>Track your leaderboard position and claim if you won.</p>
+              <button
+                onClick={() => primaryConnector && connect({ connector: primaryConnector })}
+                disabled={!primaryConnector || connectStatus === 'pending'}
+                style={{
+                  marginTop: '0.75rem',
+                  padding: '0.8rem 1.2rem',
+                  borderRadius: '10px',
+                  border: '2px solid hsl(var(--celo-black))',
+                  background: primaryConnector && connectStatus !== 'pending' ? 'hsl(var(--celo-yellow))' : '#e5e7eb',
+                  cursor: primaryConnector && connectStatus !== 'pending' ? 'pointer' : 'not-allowed',
+                  fontWeight: 800
+                }}
+              >
+                {connectStatus === 'pending' ? 'Connecting...' : primaryConnector ? 'Connect Wallet' : 'No connector'}
+              </button>
+            </div>
+          )}
           {/* Title */}
           <div style={{
             marginBottom: "1.2rem",
@@ -599,12 +638,12 @@ function LeaderboardPage() {
             {/* Season Rewards Claim Section */}
             {hasSeasonRewardContract && address && (
               <div style={{
-                background: hasClaimed 
+                background: isClaimed 
                   ? "linear-gradient(135deg, #d1fae5, #a7f3d0)"
                   : canClaim 
                     ? "linear-gradient(135deg, #fef3c7, #fde68a)"
                     : "linear-gradient(135deg, #f3f4f6, #e5e7eb)",
-                border: canClaim ? "2px solid #f59e0b" : "2px solid #d1d5db",
+                border: isClaimed ? "2px solid #16a34a" : canClaim ? "2px solid #f59e0b" : "2px solid #d1d5db",
                 padding: "1.25rem",
                 borderRadius: "16px",
                 marginBottom: "1rem",
@@ -624,7 +663,7 @@ function LeaderboardPage() {
                   fontSize: "1.5rem", 
                   marginBottom: "0.5rem"
                 }}>
-                  {hasClaimed ? "✅" : canClaim ? "🎁" : rewardAmount > BigInt(0) ? "⏳" : "📊"}
+                  {isClaimed ? "✅" : canClaim ? "🎁" : rewardAmount > BigInt(0) ? "⏳" : "📊"}
                 </div>
                 <div style={{ 
                   fontSize: "1.1rem", 
@@ -632,7 +671,7 @@ function LeaderboardPage() {
                   color: "#1e293b",
                   marginBottom: "0.5rem"
                 }}>
-                  {hasClaimed 
+                  {isClaimed 
                     ? "Reward Claimed!" 
                     : canClaim 
                       ? `${formatEther(rewardAmount)} ${rewardsConfig.currency} Available!`
@@ -659,7 +698,7 @@ function LeaderboardPage() {
                 >
                   {claimButtonLabel}
                 </button>
-                {!isDistributionActive && !hasClaimed && rewardAmount > BigInt(0) && (
+                {!isDistributionActive && !isClaimed && rewardAmount > BigInt(0) && (
                   <div style={{ 
                     fontSize: "0.85rem", 
                     color: "#dc2626",
@@ -668,7 +707,7 @@ function LeaderboardPage() {
                     ⚠️ Claim period has ended
                   </div>
                 )}
-                {hasClaimed && (
+                {isClaimed && (
                   <div style={{ 
                     fontSize: "0.85rem", 
                     color: "#16a34a",
@@ -749,7 +788,7 @@ function LeaderboardPage() {
             {/* CTA Button */}
             <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
               <button
-                onClick={() => navigate({ to: '/' })}
+                onClick={() => navigate({ to: '/quiz' })}
                 style={{
                   background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
                   color: "white",
@@ -790,30 +829,12 @@ function LeaderboardPage() {
                     <th style={{ textAlign: "left", padding: "0.5rem", fontWeight: "600", color: "#111827", fontSize: "0.85rem", width: "80px" }}>Rank</th>
                     <th style={{ textAlign: "left", padding: "0.5rem", fontWeight: "600", color: "#111827", fontSize: "0.85rem" }}>Address</th>
                     <th style={{ textAlign: "right", padding: "0.5rem", fontWeight: "600", color: "#111827", fontSize: "0.85rem", width: "100px" }}>XP</th>
-                    <th style={{ textAlign: "center", padding: "0.5rem", fontWeight: "600", color: "#111827", fontSize: "0.85rem", width: "120px" }}>Reward</th>
+                    <th style={{ textAlign: "center", padding: "0.5rem", fontWeight: "600", color: "#111827", fontSize: "0.85rem", width: "140px" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {holders.map((holder, index) => {
                     const rank = index + 1
-                    const getProportionalReward = (userXP: string) => {
-                      const totalReward = rewardsConfig.totalReward
-                      const maxWinners = rewardsConfig.maxWinners
-                      
-                      // Calculate total XP of eligible winners (top N or all if less than N)
-                      const eligibleHolders = holders.slice(0, Math.min(holders.length, maxWinners))
-                      const totalXP = eligibleHolders.reduce((sum, holder) => {
-                        return sum + parseFloat(holder.balance)
-                      }, 0)
-                      
-                      if (totalXP === 0) return 0
-                      
-                      // Calculate proportional reward: (user_xp / total_xp) * totalReward
-                      const userXPValue = parseFloat(userXP)
-                      const proportion = userXPValue / totalXP
-                      return Math.floor(totalReward * proportion)
-                    }
-                    
                     return (
                       <tr key={holder.address} style={{ borderTop: "1px solid #e5e7eb" }}>
                         <td style={{ padding: "0.5rem" }}>
@@ -951,31 +972,18 @@ function LeaderboardPage() {
                           </span>
                         </td>
                         <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                          {rank <= rewardsConfig.maxWinners ? (
-                            <span style={{
-                              background: rank <= 3 ? "#58CC02" : "#f3f4f6",
-                              color: rank <= 3 ? "white" : "#374151",
-                              padding: "0.2rem 0.4rem",
-                              borderRadius: "4px",
-                              fontSize: "0.7rem",
-                              fontWeight: "600",
-                              display: "inline-block"
-                            }}>
-                              {rewardsConfig.symbol} {getProportionalReward(holder.balance)}
-                            </span>
-                          ) : (
-                            <span style={{
-                              background: "#fef3c7",
-                              color: "#92400e",
-                              padding: "0.2rem 0.4rem",
-                              borderRadius: "4px",
-                              fontSize: "0.7rem",
-                              fontWeight: "600",
-                              display: "inline-block"
-                            }}>
-                              Keep going! 🎯
-                            </span>
-                          )}
+                          <span style={{
+                            background: rank <= rewardsConfig.maxWinners ? "#dbeafe" : "#fef3c7",
+                            color: rank <= rewardsConfig.maxWinners ? "#1d4ed8" : "#92400e",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                            fontWeight: "700",
+                            display: "inline-block",
+                            border: "1px solid #e5e7eb"
+                          }}>
+                            {rank <= rewardsConfig.maxWinners ? "Winner zone" : "Keep building"}
+                          </span>
                         </td>
                       </tr>
                     )
@@ -986,10 +994,9 @@ function LeaderboardPage() {
 
             {/* Footer */}
             <div style={{ marginTop: "1.5rem", textAlign: "center", fontSize: "0.8rem", color: "#6b7280" }}>
-              <p>Rewards distributed proportionally by XP share among top {rewardsConfig.maxWinners} holders</p>
-              <p>Data updates every 5 minutes • Powered by Blockscout indexing</p>
+              <p>Season stats refresh every few minutes. Connect to see if you can claim.</p>
               <p style={{ fontSize: "0.7rem", marginTop: "0.5rem", color: "#9ca3af" }}>
-                ⚠️ Blockscout indexing can be slow. For real-time data, check{" "}
+                ⚠️ For real-time token holder data, check{" "}
                 {chain?.blockExplorers?.default && contractAddresses && (
                   <a 
                     href={`${chain.blockExplorers.default.url}/token/${contractAddresses.token1ContractAddress}?tab=holders`}

@@ -1,737 +1,529 @@
-import { sdk } from '@farcaster/miniapp-sdk'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { useAccount, useSwitchChain } from 'wagmi'
-import GlobalHeader from '../components/GlobalHeader'
+import { toast } from 'sonner'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { formatEther } from 'viem'
 import BottomNavigation from '../components/BottomNavigation'
-import { SUPPORTED_CHAIN_IDS } from '../libs/supportedChains'
-
-interface Quiz {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  questions: number;
-  estimatedTime: string;
-  category: string;
-}
-
-const AVAILABLE_QUIZZES: Quiz[] = [
-  {
-    id: "celo-basics",
-    title: "CELO Basics",
-    description: "Learn the fundamentals of CELO blockchain and its Layer 2 capabilities",
-    icon: "🌱",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  },
-  {
-    id: "celo-l2-transition",
-    title: "CELO L2 Transition",
-    description: "Understanding CELO's evolution from L1 to L2 and key milestones",
-    icon: "🚀",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  },
-  {
-    id: "celo-features",
-    title: "CELO Features",
-    description: "Explore CELO's unique features like Fee Abstraction and native stablecoins",
-    icon: "⚡",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  },
-  {
-    id: "celo-development",
-    title: "Building on CELO",
-    description: "Learn about developing applications on CELO with tools and resources",
-    icon: "🛠️",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  },
-  {
-    id: "celo-ecosystem",
-    title: "CELO Ecosystem",
-    description: "Discover funding opportunities and community programs in CELO",
-    icon: "🌍",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  },
-  {
-    id: "celo-ai-agents",
-    title: "AI on CELO",
-    description: "Learn about AI applications and agents on the CELO blockchain",
-    icon: "🤖",
-    questions: 3,
-    estimatedTime: "1-2 min",
-    category: "CELO"
-  }
-];
-
-function SplashScreen() {
-  return (
-    <div className="poster-section" style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      height: "calc(100vh - 120px)",
-      background: "hsl(var(--background))",
-      color: "hsl(var(--foreground))",
-      position: "relative"
-    }}>
-      <div style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
-        width: "60px",
-        height: "10px",
-        background: "hsl(var(--celo-yellow))",
-        border: "var(--outline-medium)"
-      }}></div>
-      
-      <h1 className="text-headline-thin" style={{
-        fontSize: "clamp(3rem, 10vw, 8rem)",
-        fontFamily: "var(--font-headline)",
-        fontWeight: "var(--font-weight-headline-thin)",
-        letterSpacing: "-0.03em",
-        marginBottom: "2rem",
-        textAlign: "center",
-        textTransform: "uppercase"
-      }}>
-        Real<span style={{ fontStyle: "italic" }}>mind</span>
-      </h1>
-      
-      <div className="color-block-purple" style={{
-        padding: "1.5rem 3rem",
-        textAlign: "center",
-        marginBottom: "3rem"
-      }}>
-        <p className="text-body-heavy" style={{
-          fontSize: "clamp(1rem, 2vw, 1.4rem)",
-          fontFamily: "var(--font-body)",
-          fontWeight: "var(--font-weight-body-heavy)",
-          textTransform: "uppercase",
-          letterSpacing: "0.02em",
-          color: "hsl(var(--celo-white))"
-        }}>
-          Interactive Learning System
-        </p>
-      </div>
-      
-      <div style={{
-        width: "4px",
-        height: "40px",
-        background: "hsl(var(--celo-yellow))",
-        border: "var(--outline-thin)",
-        animation: "flash-raw 1.5s linear infinite"
-      }}></div>
-    </div>
-  );
-}
+import GlobalHeader from '../components/GlobalHeader'
+import { retentionSystemABI } from '../abis/retentionSystemABI'
+import { useFarcaster } from '../contexts/FarcasterContext'
+import { getContractAddresses } from '../libs/constants'
 
 function HomePage() {
-  const { chain, isConnected } = useAccount();
-  const { switchChain } = useSwitchChain();
-  const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
-  
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [hasAttemptedChainSwitch, setHasAttemptedChainSwitch] = useState(false);
-  const navigate = useNavigate();
+  const { address, chain } = useAccount()
+  const navigate = useNavigate()
+  const { composeCast } = useFarcaster()
 
-  // Countdown timer state
-  const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
-  const [quizCreatedAt, setQuizCreatedAt] = useState<string | null>(null);
-  const [currentQuizTitle, setCurrentQuizTitle] = useState<string>('');
-  const [currentQuizDescription, setCurrentQuizDescription] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isHowToPlayExpanded, setIsHowToPlayExpanded] = useState<boolean>(false);
-  
-  // Get backend URL from environment
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const [referrer, setReferrer] = useState('')
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+
+  const contracts = chain ? getContractAddresses(chain.id) : null
+  const retentionAddress = contracts?.retentionSystemContractAddress as `0x${string}` | undefined
+
+  const { data: userStats, refetch: refetchStats } = useReadContract({
+    address: retentionAddress,
+    abi: retentionSystemABI,
+    functionName: 'getUserStats',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!retentionAddress && retentionAddress !== '0x0000000000000000000000000000000000000000',
+      refetchInterval: 5000,
+    },
+  })
+
+  const { data: nextReward } = useReadContract({
+    address: retentionAddress,
+    abi: retentionSystemABI,
+    functionName: 'getNextReward',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!retentionAddress && retentionAddress !== '0x0000000000000000000000000000000000000000',
+      refetchInterval: 5000,
+    },
+  })
+
+  const { data: timeUntilCheckIn } = useReadContract({
+    address: retentionAddress,
+    abi: retentionSystemABI,
+    functionName: 'timeUntilNextCheckIn',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!retentionAddress && retentionAddress !== '0x0000000000000000000000000000000000000000',
+      refetchInterval: 5000,
+    },
+  })
+
+  const { writeContract, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
+  })
+
+  const isAnyPending = isPending || isConfirming
 
   useEffect(() => {
-    const initializeFarcasterSDK = async () => {
-      try {
-        // Initialize any app setup here if needed
-        // Only call ready() when your UI is fully loaded
-        await sdk.actions.ready();
-        setIsAppReady(true);
-      } catch (error) {
-        console.error('Error initializing Farcaster SDK:', error);
-        // Fallback: set app ready even if SDK fails
-        setIsAppReady(true);
-      }
-    };
-
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      initializeFarcasterSDK();
+    if (isSuccess && pendingAction) {
+      toast.success('✅ Check-in confirmed!')
+      refetchStats()
+      setPendingAction(null)
+      setTxHash(undefined)
     }
-  }, [isSDKLoaded]);
+  }, [isSuccess, pendingAction, refetchStats])
 
-  // Countdown timer functions - resets at UTC 00:00
-  const calculateCountdown = () => {
-    const now = new Date();
-    const tomorrow = new Date();
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-    tomorrow.setUTCHours(0, 0, 0, 0); // Next UTC midnight
-    
-    const timeDiff = tomorrow.getTime() - now.getTime();
-
-    if (timeDiff <= 0) {
-      return { hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-    return { hours, minutes, seconds };
-  };
-
-  // Fetch current quiz and set countdown
-  const fetchQuizInfo = async () => {
-    try {
-      const res = await fetch(`${backendUrl}/daily-quiz/cached`);
-      const data = await res.json();
-      
-      if (data.success && data.quizzes && data.quizzes.length > 0) {
-        const quiz = data.quizzes[0];
-        setQuizCreatedAt(quiz.createdAt);
-        setCurrentQuizTitle(quiz.title || 'Daily Quiz');
-        setCurrentQuizDescription(quiz.description || 'Test your knowledge');
-      }
-    } catch (error) {
-      console.error('Error fetching quiz info:', error);
-    }
-  };
-
-  // Update countdown every second - resets at UTC 00:00
-  useEffect(() => {
-    const updateCountdown = () => {
-      setCountdown(calculateCountdown());
-    };
-
-    updateCountdown(); // Initial update
-    const interval = setInterval(updateCountdown, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch quiz info on component mount
-  useEffect(() => {
-    fetchQuizInfo();
-  }, []);
-
-  // Auto-switch to supported chain if user is connected but on wrong chain
-  useEffect(() => {
-    const attemptChainSwitch = async () => {
-      // Only attempt once to avoid loops
-      if (hasAttemptedChainSwitch) return;
-      
-      // Only if user is connected
-      if (!isConnected) return;
-      
-      // Only if user is on wrong chain
-      const currentChainId = chain?.id;
-      const supportedChainId = SUPPORTED_CHAIN_IDS[0]; // Get the main supported chain
-      
-      if (currentChainId && currentChainId !== supportedChainId) {
-        try {
-          console.log(`Auto-switching from chain ${currentChainId} to supported chain ${supportedChainId}`);
-          setHasAttemptedChainSwitch(true); // Set this before switching to avoid loops
-          
-          await switchChain({ chainId: supportedChainId as 42220 | 8453 });
-        } catch (error) {
-          console.error('Failed to auto-switch chain:', error);
-          // Don't reset hasAttemptedChainSwitch on error to avoid retry loops
-        }
-      }
-    };
-
-    attemptChainSwitch();
-  }, [isConnected, chain?.id, switchChain, hasAttemptedChainSwitch]);
-
-  // Start Daily Quiz function
-  const startDailyQuiz = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${backendUrl}/daily-quiz/cached`);
-      const data = await res.json();
-      
-      if (data.success && data.quizzes && data.quizzes.length > 0) {
-        const quiz = data.quizzes[0];
-        // Convert to frontend format and encode for URL
-        const quizConfig = {
-          id: quiz.id,
-          title: quiz.title,
-          description: quiz.description,
-          difficulty: quiz.difficulty,
-          topic: quiz.topic || quiz.trending_topic,
-          questionCount: quiz.questionCount,
-          questions: quiz.questions.map((q: any) => ({
-            question: q.question,
-            options: q.options,
-            correct: q.correct,
-            explanation: q.explanation
-          })),
-          createdAt: quiz.createdAt,
-          source: quiz.source
-        };
-
-        // UTF-8 safe base64 encoding
-        const utf8ToBase64 = (str: string): string => {
-          return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, 
-            (match, p1) => String.fromCharCode(parseInt(p1, 16))
-          ));
-        };
-        
-        const encodedQuiz = utf8ToBase64(JSON.stringify(quizConfig));
-        const quizUrl = `/quiz-game?quiz=ai-custom&data=${encodedQuiz}`;
-        
-        // Navigate to quiz
-        navigate({ to: quizUrl });
-      } else {
-        console.error('No daily quiz available');
-      }
-    } catch (error) {
-      console.error('Error starting daily quiz:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Show loading screen while SDK initializes
-  if (!isAppReady) {
-    return <SplashScreen />;
+  const formatTime = (seconds: bigint) => {
+    const s = Number(seconds)
+    const hours = Math.floor(s / 3600)
+    const mins = Math.floor((s % 3600) / 60)
+    const secs = s % 60
+    if (hours > 0) return `${hours}h ${mins}m`
+    return `${mins}m ${secs}s`
   }
 
+  const handleCheckIn = () => {
+    if (!retentionAddress) return
+    setPendingAction('checkIn')
+    writeContract(
+      {
+        address: retentionAddress,
+        abi: retentionSystemABI,
+        functionName: 'checkIn',
+      },
+      {
+        onSuccess: (hash) => setTxHash(hash),
+        onError: (error: any) => {
+          toast.error(error?.shortMessage || 'Failed to check in')
+          setPendingAction(null)
+        },
+      }
+    )
+  }
+
+  const handleCheckInWithReferral = () => {
+    if (!retentionAddress || !referrer) return
+    setPendingAction('checkInWithReferral')
+    writeContract(
+      {
+        address: retentionAddress,
+        abi: retentionSystemABI,
+        functionName: 'checkInWithReferral',
+        args: [referrer as `0x${string}`],
+      },
+      {
+        onSuccess: (hash) => setTxHash(hash),
+        onError: (error: any) => {
+          toast.error(error?.shortMessage || 'Failed to use referral')
+          setPendingAction(null)
+        },
+      }
+    )
+  }
+
+  const handleShareReferral = async () => {
+    if (!address) {
+      toast.error('Connect your wallet to share a referral')
+      return
+    }
+
+    const baseUrl = 'https://farcaster.xyz/miniapps/fSkzq8nGNJ4C/realmind'
+    const referralLink = `${baseUrl}/bunny-game?ref=${address}`
+    const shareText = `Join me on Realmind quizzes and claim rewards! ${referralLink}`
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Realmind Quests',
+          text: shareText,
+          url: referralLink,
+        })
+        toast.success('Referral shared!')
+      } else {
+        await composeCast(shareText)
+        toast.success('Share opened in Farcaster')
+      }
+    } catch (err) {
+      await navigator.clipboard.writeText(referralLink)
+      toast.success('Referral copied to clipboard')
+    }
+  }
+
+  const canCheckIn = userStats ? Boolean(userStats[4]) : false
+  const streak = userStats ? Number(userStats[1]) : 0
+  const referralCount = userStats ? Number(userStats[3]) : 0
+  const timeRemaining = timeUntilCheckIn ? Number(timeUntilCheckIn) : 0
+
   return (
-      <div style={{
-        minHeight: "100vh",
-        paddingBottom: "70px",
-        background: "hsl(var(--background))"
-      }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        paddingBottom: '80px',
+        background: 'linear-gradient(135deg, #fef3c7 0%, #f5f3ff 35%, #ecfeff 100%)',
+      }}
+    >
       <GlobalHeader />
 
-      {/* Main Content */}
-      <div style={{
-        paddingTop: "80px",
-        padding: "clamp(0.8rem, 3vw, 1.5rem)",
-        maxWidth: "1400px",
-        margin: "0 auto"
-      }}>
-        {/* Hero Section - Compact */}
-        <div style={{
-          textAlign: "center",
-          marginBottom: "1.5rem",
-          padding: "1.5rem",
-          border: "3px solid hsl(var(--celo-black))",
-          position: "relative",
-          boxShadow: "4px 4px 0px hsl(var(--celo-black))",
-          background: "hsl(var(--celo-yellow))"
-        }}>
-          <h1 className="text-headline-thin" style={{
-            fontSize: "clamp(2rem, 8vw, 3.5rem)",
-            marginBottom: "0.8rem",
-            color: "hsl(var(--celo-black))",
-            textTransform: "uppercase",
-            lineHeight: "1",
-            margin: "0"
-          }}>
-            Learn CELO, Earn Rewards
-          </h1>
-
-          <p className="text-body-heavy" style={{
-            fontSize: "clamp(0.75rem, 2.5vw, 0.9rem)",
-            color: "hsl(var(--celo-purple))",
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-            fontWeight: "var(--font-weight-body-heavy)",
-            lineHeight: "1.3",
-            margin: "0"
-          }}>
-            Master CELO blockchain, Compete for the prize pool
-          </p>
-        </div>
-
-        {/* How to Play - Expandable Section */}
-        <div style={{ marginBottom: "1.5rem" }}>
-          <button
-            onClick={() => setIsHowToPlayExpanded(!isHowToPlayExpanded)}
+      <div
+        style={{
+          paddingTop: '90px',
+          padding: 'clamp(0.9rem, 3vw, 1.5rem)',
+          maxWidth: '1100px',
+          margin: '0 auto',
+        }}
+      >
+        {/* Hero */}
+        <div
+          style={{
+            background: 'linear-gradient(120deg, #fbbf24, #f97316)',
+            border: '3px solid hsl(var(--celo-black))',
+            borderRadius: '18px',
+            padding: '1.5rem',
+            boxShadow: '6px 6px 0px hsl(var(--celo-black))',
+            color: 'hsl(var(--celo-black))',
+            marginBottom: '1.5rem',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
             style={{
-              width: "100%",
-              background: "hsl(var(--celo-white))",
-              border: "3px solid hsl(var(--celo-black))",
-              padding: "1rem 1.5rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              cursor: "pointer",
-              transition: "var(--transition-fast)",
-              boxShadow: "3px 3px 0px hsl(var(--celo-black))"
+              position: 'absolute',
+              inset: 0,
+              background:
+                "url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"160\" viewBox=\"0 0 100 100\"><text x=\"0\" y=\"90\" font-size=\"90\" opacity=\"0.08\">🤖</text></svg>') repeat",
+              pointerEvents: 'none',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "hsl(var(--celo-tan-2))";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "hsl(var(--celo-white))";
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
-              <span style={{ fontSize: "1.5rem" }}>❓</span>
-              <h3 className="text-body-black" style={{
-                fontSize: "clamp(1rem, 3vw, 1.3rem)",
-                margin: "0",
-                textTransform: "uppercase",
-                color: "hsl(var(--celo-black))"
-              }}>
-                How to Play
-              </h3>
-            </div>
-            <span style={{
-              fontSize: "1.5rem",
-              transition: "var(--transition-fast)",
-              transform: isHowToPlayExpanded ? "rotate(180deg)" : "rotate(0deg)",
-              display: "inline-block"
-            }}>
-              ▼
-            </span>
-          </button>
+          />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <p
+              style={{
+                textTransform: 'uppercase',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                margin: 0,
+                fontSize: '0.8rem',
+              }}
+            >
+              Realmind Quest Hub
+            </p>
+            <h1
+              style={{
+                margin: '0.4rem 0',
+                fontSize: 'clamp(2.2rem, 6vw, 3rem)',
+                lineHeight: 1.05,
+              }}
+            >
+              Learn, Check In, <span style={{ fontStyle: 'italic' }}>Earn</span> on CELO
+            </h1>
+            <p
+              style={{
+                maxWidth: '620px',
+                margin: '0.25rem 0 1rem 0',
+                color: '#111827',
+                fontWeight: 600,
+              }}
+            >
+              Daily check-ins, referrals, and quizzes to climb the leaderboard and claim your rewards.
+            </p>
 
-          {isHowToPlayExpanded && (
-            <div style={{
-              background: "hsl(var(--celo-white))",
-              border: "3px solid hsl(var(--celo-black))",
-              borderTop: "none",
-              padding: "1.5rem",
-              boxShadow: "3px 3px 0px hsl(var(--celo-black))"
-            }}>
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.2rem"
-              }}>
-                {/* Step 1 */}
-                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                  <div style={{
-                    background: "hsl(var(--celo-yellow))",
-                    border: "3px solid hsl(var(--celo-black))",
-                    width: "40px",
-                    height: "40px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0
-                  }}>
-                    <span className="text-body-black" style={{
-                      fontSize: "1.2rem",
-                      color: "hsl(var(--celo-black))"
-                    }}>1</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 className="text-body-black" style={{
-                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-                      margin: "0 0 0.3rem 0",
-                      textTransform: "uppercase",
-                      color: "hsl(var(--celo-black))"
-                    }}>
-                      Play CELO Quizzes
-                    </h4>
-                    <p className="text-body-heavy" style={{
-                      fontSize: "0.85rem",
-                      margin: "0",
-                      color: "hsl(var(--celo-brown))",
-                      lineHeight: "1.4"
-                    }}>
-                      Choose from our curated CELO quizzes below and test your blockchain knowledge
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 2 */}
-                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                  <div style={{
-                    background: "hsl(var(--celo-yellow))",
-                    border: "3px solid hsl(var(--celo-black))",
-                    width: "40px",
-                    height: "40px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0
-                  }}>
-                    <span className="text-body-black" style={{
-                      fontSize: "1.2rem",
-                      color: "hsl(var(--celo-black))"
-                    }}>2</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 className="text-body-black" style={{
-                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-                      margin: "0 0 0.3rem 0",
-                      textTransform: "uppercase",
-                      color: "hsl(var(--celo-black))"
-                    }}>
-                      Earn XP Points
-                    </h4>
-                    <p className="text-body-heavy" style={{
-                      fontSize: "0.85rem",
-                      margin: "0",
-                      color: "hsl(var(--celo-brown))",
-                      lineHeight: "1.4"
-                    }}>
-                      Complete quizzes to earn XP points and climb the leaderboard rankings
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 3 */}
-                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                  <div style={{
-                    background: "hsl(var(--celo-yellow))",
-                    border: "3px solid hsl(var(--celo-black))",
-                    width: "40px",
-                    height: "40px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0
-                  }}>
-                    <span className="text-body-black" style={{
-                      fontSize: "1.2rem",
-                      color: "hsl(var(--celo-black))"
-                    }}>3</span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 className="text-body-black" style={{
-                      fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)",
-                      margin: "0 0 0.3rem 0",
-                      textTransform: "uppercase",
-                      color: "hsl(var(--celo-black))"
-                    }}>
-                      Claim Real CELO Rewards
-                    </h4>
-                    <p className="text-body-heavy" style={{
-                      fontSize: "0.85rem",
-                      margin: "0",
-                      color: "hsl(var(--celo-brown))",
-                      lineHeight: "1.4"
-                    }}>
-                      Top players share the prize pool and receive real CELO tokens as rewards
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Daily Quiz Section - More Compact */}
-        {/* <div style={{
-          background: "#ffffff",
-          borderRadius: "12px",
-          padding: "1.5rem",
-          marginBottom: "1.5rem",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <h3 style={{ color: "#111827", fontSize: "1.2rem", margin: 0 }}>🎯 Daily Quiz</h3>
-            {countdown && (
-              <div style={{ color: "#6b7280", fontSize: "0.9rem", fontWeight: "bold" }}>
-                Next: {countdown.hours.toString().padStart(2, '0')}:{countdown.minutes.toString().padStart(2, '0')}:{countdown.seconds.toString().padStart(2, '0')}
-              </div>
-            )}
-          </div>
-          
-          <p style={{ color: "#6b7280", marginBottom: "1rem", fontSize: "0.9rem" }}>
-            {currentQuizDescription || "Complete today's quiz to earn points!"}
-          </p>
-          
-          <button
-            onClick={startDailyQuiz}
-            disabled={loading}
-            style={{
-              background: "#58CC02",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.7 : 1,
-              transition: "all 0.3s ease",
-              width: "100%"
-            }}
-          >
-            {loading ? "Loading..." : "🚀 Start Daily Quiz"}
-          </button>
-        </div> */}
-
-        {/* AI Quiz Section */}
-        {/* <div style={{
-          background: "#ffffff",
-          borderRadius: "12px",
-          padding: "1.5rem",
-          marginBottom: "1.5rem",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-        }}>
-          <h3 style={{ color: "#111827", fontSize: "1.2rem", marginBottom: "0.5rem" }}>🤖 AI Quiz</h3>
-          <p style={{ color: "#6b7280", marginBottom: "1rem", fontSize: "0.9rem" }}>
-            Generate personalized quizzes on any topic
-          </p>
-          
-          <button
-            onClick={() => navigate({ to: '/ai-quiz' })}
-            style={{
-              background: "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              width: "100%"
-            }}
-          >
-            🧠 Generate AI Quiz
-          </button>
-        </div> */}
-
-        {/* Available Quizzes - Compact Grid */}
-        <div style={{ marginBottom: "2rem" }}>
-          <div className="color-block-purple" style={{
-            padding: "0.8rem 1.5rem",
-            marginBottom: "1.2rem",
-            display: "inline-block",
-            border: "3px solid hsl(var(--celo-black))",
-            boxShadow: "3px 3px 0px hsl(var(--celo-black))"
-          }}>
-            <h2 className="text-headline-thin" style={{
-              fontSize: "clamp(1.3rem, 4vw, 2rem)",
-              color: "hsl(var(--celo-white))",
-              textTransform: "uppercase",
-              margin: "0"
-            }}>
-              Available <span style={{ fontStyle: "italic" }}>Quizzes</span>
-            </h2>
-          </div>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "1rem"
-          }}>
-            {AVAILABLE_QUIZZES.map((quiz, index) => (
-              <div
-                key={quiz.id}
-                className="quiz-card-raw"
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <button
+                onClick={() => navigate({ to: '/quiz' })}
                 style={{
-                  background: "hsl(var(--celo-white))",
-                  cursor: "pointer",
-                  transition: "var(--transition-fast)",
-                  position: "relative",
-                  border: "3px solid hsl(var(--celo-black))",
-                  padding: "1rem",
-                  boxShadow: "3px 3px 0px hsl(var(--celo-black))"
-                }}
-                onClick={() => navigate({ to: '/quiz-game', search: { quiz: quiz.id } })}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "hsl(var(--celo-yellow))";
-                  e.currentTarget.style.color = "hsl(var(--celo-black))";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "5px 5px 0px hsl(var(--celo-black))";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "hsl(var(--celo-white))";
-                  e.currentTarget.style.color = "hsl(var(--celo-black))";
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "3px 3px 0px hsl(var(--celo-black))";
+                  background: '#111827',
+                  color: 'white',
+                  border: '2px solid hsl(var(--celo-black))',
+                  borderRadius: '12px',
+                  padding: '0.9rem 1.4rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '4px 4px 0px hsl(var(--celo-black))',
                 }}
               >
-                <div style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  width: "20px",
-                  height: "4px",
-                  background: `hsl(var(--celo-${index % 2 === 0 ? 'yellow' : 'green'}))`,
-                  border: "2px solid hsl(var(--celo-black))"
-                }}></div>
-
-                <div style={{
-                  fontSize: "2rem",
-                  marginBottom: "0.6rem",
-                  fontWeight: "var(--font-weight-body-black)"
-                }}>{quiz.icon}</div>
-
-                <h3 className="text-body-black" style={{
-                  fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
-                  marginBottom: "0.5rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.02em",
-                  lineHeight: "1.2"
-                }}>{quiz.title}</h3>
-
-                <p className="text-body-heavy" style={{
-                  marginBottom: "0.8rem",
-                  fontSize: "0.75rem",
-                  lineHeight: "1.3",
-                  color: "hsl(var(--celo-brown))"
-                }}>
-                  {quiz.description}
-                </p>
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderTop: "2px solid hsl(var(--celo-black))",
-                  paddingTop: "0.6rem",
-                  marginTop: "auto"
-                }}>
-                  <span className="text-body-heavy" style={{
-                    fontSize: "0.65rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.02em",
-                    color: "hsl(var(--celo-brown))"
-                  }}>
-                    {quiz.questions} Q • {quiz.estimatedTime.toUpperCase()}
-                  </span>
-                  <div className="color-block" style={{
-                    background: "hsl(var(--celo-tan-2))",
-                    padding: "0.3rem 0.5rem",
-                    fontSize: "0.6rem",
-                    fontWeight: "var(--font-weight-body-black)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.02em",
-                    border: "2px solid hsl(var(--celo-black))"
-                  }}>
-                    {quiz.category}
-                  </div>
-                </div>
-              </div>
-            ))}
+                🚀 Start a Quiz
+              </button>
+              <button
+                onClick={() => navigate({ to: '/leaderboard' })}
+                style={{
+                  background: 'white',
+                  color: '#111827',
+                  border: '2px solid hsl(var(--celo-black))',
+                  borderRadius: '12px',
+                  padding: '0.9rem 1.4rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '4px 4px 0px hsl(var(--celo-black))',
+                }}
+              >
+                🏆 View Leaderboard
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* Connection hint */}
+        {!address && (
+          <div
+            style={{
+              background: 'white',
+              border: '2px dashed #9ca3af',
+              padding: '0.9rem 1rem',
+              borderRadius: '12px',
+              marginBottom: '1rem',
+              color: '#374151',
+              fontWeight: 600,
+            }}
+          >
+            Connect your wallet in the header to check in daily, track referrals, and see your rewards.
+          </div>
+        )}
+
+        {/* Check-in & referral cards */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              border: '3px solid hsl(var(--celo-black))',
+              borderRadius: '14px',
+              padding: '1.1rem',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>📅 Daily Check-in</h3>
+              <span
+                style={{
+                  background: canCheckIn ? '#dcfce7' : '#f3f4f6',
+                  color: canCheckIn ? '#166534' : '#6b7280',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                }}
+              >
+                {canCheckIn ? 'Ready' : address ? 'Cooldown' : 'Connect'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.8rem' }}>
+              <div
+                style={{
+                  flex: 1,
+                  background: '#f9fafb',
+                  borderRadius: '10px',
+                  padding: '0.75rem',
+                  textAlign: 'center',
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{streak}</div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Day Streak</div>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  background: '#f9fafb',
+                  borderRadius: '10px',
+                  padding: '0.75rem',
+                  textAlign: 'center',
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>
+                  {nextReward ? formatEther(nextReward) : '—'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>Next Reward</div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCheckIn}
+              disabled={!address || isAnyPending || !canCheckIn}
+              style={{
+                width: '100%',
+                padding: '0.9rem',
+                borderRadius: '10px',
+                border: '2px solid hsl(var(--celo-black))',
+                background: !address
+                  ? '#e5e7eb'
+                  : canCheckIn && !isAnyPending
+                    ? '#22c55e'
+                    : '#f3f4f6',
+                color: !address
+                  ? '#6b7280'
+                  : canCheckIn && !isAnyPending
+                    ? 'white'
+                    : '#6b7280',
+                fontWeight: 800,
+                cursor: !address || !canCheckIn ? 'not-allowed' : 'pointer',
+                marginBottom: '0.4rem',
+              }}
+            >
+              {pendingAction === 'checkIn'
+                ? isConfirming
+                  ? '⏳ Confirming...'
+                  : '⏳ Sending...'
+                : canCheckIn
+                  ? '✅ Check In Now'
+                  : timeRemaining > 0
+                    ? `⏰ ${formatTime(BigInt(timeRemaining))}`
+                    : 'Connect to check in'}
+            </button>
+          </div>
+
+          <div
+            style={{
+              background: 'white',
+              border: '3px solid hsl(var(--celo-black))',
+              borderRadius: '14px',
+              padding: '1.1rem',
+              boxShadow: '4px 4px 0px hsl(var(--celo-black))',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>👥 Referrals</h3>
+              <span
+                style={{
+                  background: '#eef2ff',
+                  color: '#4338ca',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                }}
+              >
+                {referralCount} joined
+              </span>
+            </div>
+
+            <p style={{ color: '#4b5563', margin: '0 0 0.75rem 0', fontWeight: 600 }}>
+              Share your link to earn bonus eggs and keep your streak alive.
+            </p>
+
+            <button
+              onClick={handleShareReferral}
+              style={{
+                width: '100%',
+                padding: '0.8rem',
+                borderRadius: '10px',
+                border: '2px solid hsl(var(--celo-black))',
+                background: '#f59e0b',
+                color: 'white',
+                fontWeight: 800,
+                cursor: 'pointer',
+                marginBottom: '0.6rem',
+              }}
+            >
+              📤 Share Referral
+            </button>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                value={referrer}
+                onChange={(e) => setReferrer(e.target.value)}
+                placeholder="Friend referral (0x...)"
+                style={{
+                  flex: 1,
+                  padding: '0.7rem',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e7eb',
+                  fontSize: '0.9rem',
+                }}
+              />
+              <button
+                onClick={handleCheckInWithReferral}
+                disabled={!address || !referrer || isAnyPending}
+                style={{
+                  padding: '0.75rem 1rem',
+                  borderRadius: '10px',
+                  border: '2px solid hsl(var(--celo-black))',
+                  background: referrer && address && !isAnyPending ? '#8b5cf6' : '#e5e7eb',
+                  color: referrer && address && !isAnyPending ? 'white' : '#6b7280',
+                  fontWeight: 800,
+                  cursor: referrer && address && !isAnyPending ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {pendingAction === 'checkInWithReferral' ? '⏳' : 'Use Referral'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick action tiles */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '0.9rem',
+          }}
+        >
+          {[
+            {
+              title: 'Daily Quiz',
+              description: 'Answer quick questions and earn XP instantly.',
+              cta: 'Play now',
+              action: () => navigate({ to: '/quiz' }),
+              accent: '#e0f2fe',
+              icon: '🧠',
+            },
+            {
+              title: 'Leaderboard',
+              description: 'Track your rank and see if you can claim rewards.',
+              cta: 'Check rank',
+              action: () => navigate({ to: '/leaderboard' }),
+              accent: '#fef3c7',
+              icon: '🏆',
+            },
+            {
+              title: 'Bunny Game',
+              description: 'Keep your bunny happy and collect eggs.',
+              cta: 'Open game',
+              action: () => navigate({ to: '/bunny-game' }),
+              accent: '#ecfeff',
+              icon: '🐰',
+            },
+          ].map((card) => (
+            <div
+              key={card.title}
+              style={{
+                background: card.accent,
+                border: '3px solid hsl(var(--celo-black))',
+                borderRadius: '12px',
+                padding: '1rem',
+                boxShadow: '4px 4px 0px hsl(var(--celo-black))',
+              }}
+            >
+              <div style={{ fontSize: '1.5rem' }}>{card.icon}</div>
+              <h3 style={{ margin: '0.4rem 0 0.2rem 0' }}>{card.title}</h3>
+              <p style={{ margin: 0, color: '#4b5563', fontWeight: 600 }}>{card.description}</p>
+              <button
+                onClick={card.action}
+                style={{
+                  marginTop: '0.8rem',
+                  border: '2px solid hsl(var(--celo-black))',
+                  background: 'white',
+                  borderRadius: '10px',
+                  padding: '0.7rem 1rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                {card.cta} →
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNavigation />
     </div>
-  );
+  )
 }
 
 export const Route = createFileRoute('/')({
