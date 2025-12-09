@@ -34,3 +34,5 @@ TODO.md
 
 contracts/broadcast/*
 .vercel
+
+*.csv

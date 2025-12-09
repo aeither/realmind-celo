@@ -34,10 +34,10 @@ source .env && SEASON_REWARD_ADDRESS=0x... FUND_AMOUNT=250000000000000000000 for
 ```bash
 # 1. Export holders.csv from block explorer
 # 2. Process rewards
-npx ts-node scripts/process-rewards.ts --input holders.csv --output rewards --chain 42220
+npx tsx scripts/process-rewards.ts --input scripts/holders.csv --output scripts/rewards --chain 42220
 
 # 3. Upload to contract (edit contract address first)
-npx ts-node scripts/upload-rewards.ts --contract 0xYOUR_SEASON_REWARD_ADDRESS
+npx tsx scripts/upload-rewards.ts --contract 0x49Cde09f1CE2A1C00ef1920BB7C0ae34F565524E
 ```
 
 ### End Season & Withdraw

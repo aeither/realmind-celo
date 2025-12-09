@@ -33,6 +33,9 @@ function LeaderboardPage() {
   const contractAddresses = chain ? getContractAddresses(chain.id) : null
   const rewardsConfig = getRewardsConfig(chain?.id || 0)
   const seasonRewardAddress = contractAddresses?.seasonRewardContractAddress as `0x${string}` | undefined
+  const seasonEndDate = rewardsConfig.seasonEndDate ? new Date(rewardsConfig.seasonEndDate) : null
+  const hasSeasonEnded = seasonEndDate ? new Date() >= seasonEndDate : false
+  const seasonEndLabel = seasonEndDate ? formatEndDate(seasonEndDate) : null
 
   // Read claim status from SeasonReward contract
   const { data: claimStatus, refetch: refetchClaimStatus } = useReadContract({
@@ -71,8 +74,14 @@ function LeaderboardPage() {
     }
   }, [isClaimSuccess])
 
+  // Parse claim status
+  const rewardAmount = claimStatus ? claimStatus[0] : BigInt(0)
+  const hasClaimed = claimStatus ? claimStatus[1] : false
+  const canClaim = claimStatus ? claimStatus[2] : false
+  const hasSeasonRewardContract = seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
+  const canPressClaim = !!address && !!seasonRewardAddress && canClaim
   const handleClaimReward = () => {
-    if (!seasonRewardAddress) return
+    if (!seasonRewardAddress || !canPressClaim) return
     writeContract({
       address: seasonRewardAddress,
       abi: seasonRewardABI,
@@ -81,12 +90,16 @@ function LeaderboardPage() {
       onSuccess: (hash) => setClaimTxHash(hash)
     })
   }
-
-  // Parse claim status
-  const rewardAmount = claimStatus ? claimStatus[0] : BigInt(0)
-  const hasClaimed = claimStatus ? claimStatus[1] : false
-  const canClaim = claimStatus ? claimStatus[2] : false
-  const hasSeasonRewardContract = seasonRewardAddress && seasonRewardAddress !== '0x0000000000000000000000000000000000000000'
+  const claimButtonLabel = (() => {
+    if (isClaimPending || isClaimConfirming) return '⏳ Claiming...'
+    if (!hasSeasonRewardContract) return 'Rewards not ready'
+    if (!address) return 'Connect wallet to claim'
+    if (hasClaimed) return 'Already claimed'
+    if (rewardAmount === BigInt(0)) return 'Nothing to claim'
+    if (isDistributionActive === false) return 'Claim period ended'
+    return `Claim ${formatEther(rewardAmount)} ${rewardsConfig.currency}`
+  })()
+  const claimButtonDisabled = isClaimPending || isClaimConfirming || !canPressClaim
 
   const fetchLeaderboard = async () => {
     if (!chain || !contractAddresses) {
@@ -597,6 +610,16 @@ function LeaderboardPage() {
                 marginBottom: "1rem",
                 textAlign: "center"
               }}>
+                {seasonEndLabel && (
+                  <div style={{ 
+                    fontSize: "0.85rem", 
+                    color: "#6b7280",
+                    marginBottom: "0.35rem",
+                    fontWeight: 600
+                  }}>
+                    {hasSeasonEnded ? "Season ended" : "Season ends"} on {seasonEndLabel}
+                  </div>
+                )}
                 <div style={{ 
                   fontSize: "1.5rem", 
                   marginBottom: "0.5rem"
@@ -618,26 +641,24 @@ function LeaderboardPage() {
                         : "No Rewards Yet"
                   }
                 </div>
-                {canClaim && (
-                  <button
-                    onClick={handleClaimReward}
-                    disabled={isClaimPending || isClaimConfirming}
-                    style={{
-                      background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "12px",
-                      padding: "1rem 2rem",
-                      fontSize: "1rem",
-                      fontWeight: "600",
-                      cursor: isClaimPending || isClaimConfirming ? "not-allowed" : "pointer",
-                      boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
-                      marginTop: "0.5rem"
-                    }}
-                  >
-                    {isClaimPending || isClaimConfirming ? "⏳ Claiming..." : "🎉 Claim Reward"}
-                  </button>
-                )}
+                <button
+                  onClick={handleClaimReward}
+                  disabled={claimButtonDisabled}
+                  style={{
+                    background: claimButtonDisabled ? "#e5e7eb" : "linear-gradient(135deg, #22c55e, #16a34a)",
+                    color: claimButtonDisabled ? "#9ca3af" : "white",
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "1rem 2rem",
+                    fontSize: "1rem",
+                    fontWeight: "600",
+                    cursor: claimButtonDisabled ? "not-allowed" : "pointer",
+                    boxShadow: claimButtonDisabled ? "none" : "0 4px 12px rgba(34, 197, 94, 0.3)",
+                    marginTop: "0.5rem"
+                  }}
+                >
+                  {claimButtonLabel}
+                </button>
                 {!isDistributionActive && !hasClaimed && rewardAmount > BigInt(0) && (
                   <div style={{ 
                     fontSize: "0.85rem", 

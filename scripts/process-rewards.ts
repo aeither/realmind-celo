@@ -14,7 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { getRewardsConfig } from '../../src/libs/constants';
+import { getRewardsConfig } from '../src/libs/constants';
 
 // Helper to get rewards config in the format needed for this script
 const getProcessRewardsConfig = (chainId: number) => {
@@ -41,6 +41,12 @@ interface ProcessedReward {
   rewardAmount: string; // in wei (18 decimals)
   rewardReadable: string; // human readable
 }
+
+// Round down to a fixed number of decimals to avoid overpaying
+const roundDown = (value: number, decimals: number) => {
+  const factor = 10 ** decimals;
+  return Math.floor(value * factor) / factor;
+};
 
 function parseCSV(content: string): RawHolder[] {
   const lines = content.trim().split('\n');
@@ -118,16 +124,17 @@ function processRewards(holders: RawHolder[], chainId: number): ProcessedReward[
     // Calculate proportion: (user_score / total_score) * total_reward
     const proportion = holder.quantity / totalScore;
     const rewardAmount = config.totalReward * proportion;
+    const rewardRounded = roundDown(rewardAmount, 2); // round down to 2 decimals
     
     // Convert to wei (18 decimals)
-    const rewardWei = BigInt(Math.floor(rewardAmount * 1e18));
+    const rewardWei = BigInt(Math.floor(rewardRounded * 1e18));
     totalDistributed += rewardWei;
     
     processed.push({
       address: holder.address,
       score: holder.quantity.toString(),
       rewardAmount: rewardWei.toString(),
-      rewardReadable: rewardAmount.toFixed(6)
+      rewardReadable: rewardRounded.toFixed(2)
     });
   }
   
@@ -140,18 +147,6 @@ function generateCSV(rewards: ProcessedReward[]): string {
   const header = 'Address,Score,RewardWei,RewardReadable';
   const rows = rewards.map(r => `${r.address},${r.score},${r.rewardAmount},${r.rewardReadable}`);
   return [header, ...rows].join('\n');
-}
-
-function generateJSON(rewards: ProcessedReward[]): string {
-  return JSON.stringify({
-    generatedAt: new Date().toISOString(),
-    totalRecipients: rewards.length,
-    rewards: rewards.map(r => ({
-      address: r.address,
-      amount: r.rewardAmount,
-      amountReadable: r.rewardReadable
-    }))
-  }, null, 2);
 }
 
 // Main execution
@@ -208,18 +203,12 @@ Example:
   
   // Generate output
   const baseName = outputFile || path.basename(inputFile, '.csv') + '_processed';
-  
-  // Write CSV
+
+  // Write CSV only
   const csvOutput = generateCSV(rewards);
   const csvPath = baseName.endsWith('.csv') ? baseName : baseName + '.csv';
   fs.writeFileSync(csvPath, csvOutput);
   console.log(`\n✅ CSV written to: ${csvPath}`);
-  
-  // Write JSON
-  const jsonOutput = generateJSON(rewards);
-  const jsonPath = baseName.endsWith('.csv') ? baseName.replace('.csv', '.json') : baseName + '.json';
-  fs.writeFileSync(jsonPath, jsonOutput);
-  console.log(`✅ JSON written to: ${jsonPath}`);
   
   // Print summary
   console.log(`\n📋 Summary:`);

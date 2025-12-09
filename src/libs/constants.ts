@@ -24,7 +24,7 @@ const CONTRACT_ADDRESSES = {
   42220: {
     token1ContractAddress: "0xe05489dea86d85c32609410a1bF9C35a0f8fc2e7",
     quizGameContractAddress: "0x367c011DC980E695EdE1e314af0a82C7E2b01e3B",
-    seasonRewardContractAddress: "0x0000000000000000000000000000000000000000",
+    seasonRewardContractAddress: "0x49Cde09f1CE2A1C00ef1920BB7C0ae34F565524E",
     // BunnyGame contracts
     eggTokenContractAddress: "0x4FCf91f48d3888126ebaabc8fa698cd5cBCAD648",
     bunnyGameContractAddress: "0x0FdD3Cc0abB29B1baf1e901ca096e8AE3B43Ba51",

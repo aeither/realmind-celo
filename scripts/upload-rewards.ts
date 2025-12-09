@@ -1,19 +1,24 @@
 #!/usr/bin/env npx ts-node
 /**
- * Upload Script: Set rewards on SeasonReward contract from processed JSON
- * 
- * This script reads the processed rewards JSON and generates a Foundry script
- * or directly calls the contract to set rewards.
- * 
+ * Upload Script: Set rewards on SeasonReward contract from processed CSV
+ *
+ * This script reads the processed rewards CSV (from process-rewards.ts) and
+ * generates a Foundry script, cast commands, or raw address/amount lists.
+ *
  * Usage:
- *   npx ts-node scripts/upload-rewards.ts --input rewards.json --contract 0x... --chain 42220
- *   
+ *   npx ts-node scripts/upload-rewards.ts --input rewards.csv --contract 0x... --format foundry
+ *
  * Or generate Foundry script:
- *   npx ts-node scripts/upload-rewards.ts --input rewards.json --output set-rewards.s.sol
+ *   npx ts-node scripts/upload-rewards.ts --input rewards.csv --output set-rewards.s.sol
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
+
+interface CsvRewardRow {
+  address: string;
+  amount: string;
+  amountReadable: string;
+}
 
 interface RewardsData {
   generatedAt: string;
@@ -27,9 +32,31 @@ interface RewardsData {
 
 const CHUNK_SIZE = 100; // Process rewards in batches to avoid gas limits
 
-function readRewardsJSON(filePath: string): RewardsData {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(content) as RewardsData;
+function readCSV(filePath: string): RewardsData {
+  const content = fs.readFileSync(filePath, 'utf-8').trim();
+  const lines = content.split('\n');
+  // Expect header: Address,Score,RewardWei,RewardReadable
+  const rows: CsvRewardRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    const [address, _score, rewardWei, rewardReadable] = line.split(',');
+    rows.push({
+      address: address.trim(),
+      amount: rewardWei.trim(),
+      amountReadable: rewardReadable?.trim() || '0'
+    });
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totalRecipients: rows.length,
+    rewards: rows.map(r => ({
+      address: r.address,
+      amount: r.amount,
+      amountReadable: r.amountReadable
+    }))
+  };
 }
 
 function generateFoundryScript(data: RewardsData, contractAddress: string): string {
@@ -191,29 +218,29 @@ function main() {
 
   if (!inputFile) {
     console.log(`
-Upload Script: Generate contract calls from processed rewards JSON
+Upload Script: Generate contract calls from processed rewards CSV
 
 Usage:
-  npx ts-node scripts/upload-rewards.ts --input <json_file> --contract <address> [--output <file>] [--format <type>]
+  npx ts-node scripts/upload-rewards.ts --input <csv_file> --contract <address> [--output <file>] [--format <type>]
 
 Options:
-  --input     Input JSON file from process-rewards.ts
+  --input     Input file from process-rewards.ts (csv only)
   --contract  SeasonReward contract address
   --output    Output file (optional)
   --format    Output format: foundry (default), cast, or raw
 
 Examples:
   # Generate Foundry script
-  npx ts-node scripts/upload-rewards.ts --input rewards.json --contract 0x123... --output SetRewards.s.sol
+  npx ts-node scripts/upload-rewards.ts --input rewards.csv --contract 0x123... --output SetRewards.s.sol
   
   # Generate cast commands
-  npx ts-node scripts/upload-rewards.ts --input rewards.json --contract 0x123... --format cast --output set-rewards.sh
+  npx ts-node scripts/upload-rewards.ts --input rewards.csv --contract 0x123... --format cast --output set-rewards.sh
 `);
     process.exit(1);
   }
 
   console.log(`\n📂 Reading rewards: ${inputFile}`);
-  const data = readRewardsJSON(inputFile);
+  const data = readCSV(inputFile);
   console.log(`   Found ${data.totalRecipients} recipients`);
   console.log(`   Generated at: ${data.generatedAt}`);
 
