@@ -42,12 +42,6 @@ interface ProcessedReward {
   rewardReadable: string; // human readable
 }
 
-// Round down to a fixed number of decimals to avoid overpaying
-const roundDown = (value: number, decimals: number) => {
-  const factor = 10 ** decimals;
-  return Math.floor(value * factor) / factor;
-};
-
 function parseCSV(content: string): RawHolder[] {
   const lines = content.trim().split('\n');
   const holders: RawHolder[] = [];
@@ -123,18 +117,19 @@ function processRewards(holders: RawHolder[], chainId: number): ProcessedReward[
     
     // Calculate proportion: (user_score / total_score) * total_reward
     const proportion = holder.quantity / totalScore;
-    const rewardAmount = config.totalReward * proportion;
-    const rewardRounded = roundDown(rewardAmount, 2); // round down to 2 decimals
+    // Work in cents to avoid floating point drift when converting to wei
+    const rewardCents = Math.floor(config.totalReward * proportion * 100 + 1e-9); // floor to 2 decimals
+    const rewardReadable = (rewardCents / 100).toFixed(2);
     
     // Convert to wei (18 decimals)
-    const rewardWei = BigInt(Math.floor(rewardRounded * 1e18));
+    const rewardWei = BigInt(rewardCents) * 10n ** 16n; // cents -> wei
     totalDistributed += rewardWei;
     
     processed.push({
       address: holder.address,
       score: holder.quantity.toString(),
       rewardAmount: rewardWei.toString(),
-      rewardReadable: rewardRounded.toFixed(2)
+      rewardReadable
     });
   }
   

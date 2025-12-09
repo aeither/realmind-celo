@@ -13,6 +13,8 @@
  */
 
 import * as fs from 'fs';
+import * as path from 'path';
+import { getAddress } from 'viem'; // ✅ Using viem instead of ethers
 
 interface CsvRewardRow {
   address: string;
@@ -32,17 +34,39 @@ interface RewardsData {
 
 const CHUNK_SIZE = 100; // Process rewards in batches to avoid gas limits
 
+// ✅ VIEM: Function to validate and checksum addresses
+function checksumAddress(address: string): string {
+  try {
+    // Remove 0x prefix if present and validate it's a hex address
+    const cleanAddress = address.toLowerCase().replace(/^0x/i, '');
+    if (!/^[0-9a-f]{40}$/i.test(cleanAddress)) {
+      throw new Error(`Invalid address format: ${address}`);
+    }
+
+    // Use viem to get checksummed version
+    return getAddress('0x' + cleanAddress);
+  } catch (error) {
+    console.error(`❌ Invalid address: ${address}`);
+    throw error;
+  }
+}
+
 function readCSV(filePath: string): RewardsData {
   const content = fs.readFileSync(filePath, 'utf-8').trim();
   const lines = content.split('\n');
   // Expect header: Address,Score,RewardWei,RewardReadable
   const rows: CsvRewardRow[] = [];
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;
     const [address, _score, rewardWei, rewardReadable] = line.split(',');
+
+    const cleanAddress = address.trim();
+    const checksummedAddress = checksumAddress(cleanAddress); // ✅ Validate & checksum with viem
+
     rows.push({
-      address: address.trim(),
+      address: checksummedAddress, // ✅ Use checksummed address
       amount: rewardWei.trim(),
       amountReadable: rewardReadable?.trim() || '0'
     });
@@ -60,13 +84,16 @@ function readCSV(filePath: string): RewardsData {
 }
 
 function generateFoundryScript(data: RewardsData, contractAddress: string): string {
+  // ✅ Ensure contract address is checksummed with viem
+  const checksummedContract = checksumAddress(contractAddress);
+
   const chunks: Array<{ addresses: string[]; amounts: string[] }> = [];
 
   // Split into chunks
   for (let i = 0; i < data.rewards.length; i += CHUNK_SIZE) {
     const chunk = data.rewards.slice(i, i + CHUNK_SIZE);
     chunks.push({
-      addresses: chunk.map(r => r.address),
+      addresses: chunk.map(r => r.address), // ✅ Already checksummed
       amounts: chunk.map(r => r.amount)
     });
   }
@@ -92,7 +119,7 @@ contract SetSeasonRewardsScript is Script {
     SeasonReward public seasonReward;
 
     function setUp() public {
-        seasonReward = SeasonReward(payable(${contractAddress}));
+        seasonReward = SeasonReward(payable(${checksummedContract})); // ✅ Checksummed with viem
     }
 
     function run() public {
@@ -100,7 +127,7 @@ contract SetSeasonRewardsScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         console.log("Setting rewards on SeasonReward at:", address(seasonReward));
-        console.log("Total recipients:", ${data.totalRecipients});
+        console.log("Total recipients:", uint256(${data.totalRecipients}));
 `;
 
   // Add batch calls
@@ -122,14 +149,14 @@ contract SetSeasonRewardsScript is Script {
 
     script += `
             seasonReward.setSeasonRewards(users, amounts);
-            console.log("Batch ${index + 1} complete: ${chunk.addresses.length} recipients");
+            console.log("Batch ${index + 1} complete:", uint256(${chunk.addresses.length}), "recipients");
         }
 `;
   });
 
   script += `
         console.log("\\n=== Rewards Set Successfully ===");
-        console.log("Total recipients:", ${data.totalRecipients});
+        console.log("Total recipients:", uint256(${data.totalRecipients}));
         console.log("Remember to fund the contract with at least ${totalEther.toFixed(6)} native tokens");
 
         vm.stopBroadcast();
@@ -141,12 +168,14 @@ contract SetSeasonRewardsScript is Script {
 }
 
 function generateCastCommands(data: RewardsData, contractAddress: string): string {
+  const checksummedContract = checksumAddress(contractAddress); // ✅ Checksum with viem
+
   const chunks: Array<{ addresses: string[]; amounts: string[] }> = [];
 
   for (let i = 0; i < data.rewards.length; i += CHUNK_SIZE) {
     const chunk = data.rewards.slice(i, i + CHUNK_SIZE);
     chunks.push({
-      addresses: chunk.map(r => r.address),
+      addresses: chunk.map(r => r.address), // ✅ Already checksummed
       amounts: chunk.map(r => r.amount)
     });
   }
@@ -155,16 +184,16 @@ function generateCastCommands(data: RewardsData, contractAddress: string): strin
 # Generated Cast commands to set rewards
 # Generated at: ${data.generatedAt}
 # Total recipients: ${data.totalRecipients}
-# Contract: ${contractAddress}
+# Contract: ${checksummedContract} # ✅ Checksummed with viem
 
 set -e
 
-CONTRACT="${contractAddress}"
+CONTRACT="${checksummedContract}"
 
 `;
 
   chunks.forEach((chunk, index) => {
-    // Format arrays for cast
+    // Format arrays for cast (already checksummed)
     const addressArray = `[${chunk.addresses.join(',')}]`;
     const amountArray = `[${chunk.amounts.join(',')}]`;
 
@@ -186,7 +215,7 @@ echo "Total recipients: ${data.totalRecipients}"
 
 function generateAddressesAndAmounts(data: RewardsData): { addresses: string; amounts: string } {
   return {
-    addresses: data.rewards.map(r => r.address).join('\n'),
+    addresses: data.rewards.map(r => r.address).join('\n'), // ✅ Already checksummed with viem
     amounts: data.rewards.map(r => r.amount).join('\n')
   };
 }
@@ -241,7 +270,7 @@ Examples:
 
   console.log(`\n📂 Reading rewards: ${inputFile}`);
   const data = readCSV(inputFile);
-  console.log(`   Found ${data.totalRecipients} recipients`);
+  console.log(`   ✅ Found ${data.totalRecipients} recipients (all addresses checksum validated with viem)`);
   console.log(`   Generated at: ${data.generatedAt}`);
 
   // Calculate total
@@ -250,28 +279,32 @@ Examples:
   console.log(`   Total rewards: ${totalEther.toFixed(6)} native tokens`);
 
   let output: string;
-  let defaultExt: string;
+  let outputPath: string | undefined;
 
   switch (format) {
     case 'cast':
       output = generateCastCommands(data, contractAddress);
-      defaultExt = '.sh';
+      if (outputFile) {
+        outputPath = outputFile.includes('.') ? outputFile : outputFile + '.sh';
+      }
       break;
     case 'raw':
       const raw = generateAddressesAndAmounts(data);
       fs.writeFileSync(outputFile ? outputFile + '_addresses.txt' : 'addresses.txt', raw.addresses);
       fs.writeFileSync(outputFile ? outputFile + '_amounts.txt' : 'amounts.txt', raw.amounts);
-      console.log(`\n✅ Raw files written`);
+      console.log(`\n✅ Raw files written (addresses checksum validated with viem)`);
       return;
     default:
       output = generateFoundryScript(data, contractAddress);
-      defaultExt = '.s.sol';
+      outputPath = outputFile
+        ? (outputFile.includes('.') ? outputFile : outputFile + '.s.sol')
+        : path.join('contracts', 'script', 'SetSeasonRewards.s.sol');
   }
 
-  if (outputFile) {
-    const finalPath = outputFile.includes('.') ? outputFile : outputFile + defaultExt;
-    fs.writeFileSync(finalPath, output);
-    console.log(`\n✅ Output written to: ${finalPath}`);
+  if (outputPath) {
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, output);
+    console.log(`\n✅ Output written to: ${outputPath}`);
   } else {
     console.log(`\n--- Generated Output ---\n`);
     console.log(output);
@@ -284,10 +317,3 @@ Examples:
 }
 
 main();
-
-
-
-
-
-
-

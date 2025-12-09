@@ -37,7 +37,10 @@ source .env && SEASON_REWARD_ADDRESS=0x... FUND_AMOUNT=250000000000000000000 for
 npx tsx scripts/process-rewards.ts --input scripts/holders.csv --output scripts/rewards --chain 42220
 
 # 3. Upload to contract (edit contract address first)
-npx tsx scripts/upload-rewards.ts --contract 0x49Cde09f1CE2A1C00ef1920BB7C0ae34F565524E
+npx tsx scripts/upload-rewards.ts --input scripts/rewards.csv --contract 0xYOUR_SEASON_REWARD_ADDRESS --format foundry
+
+# 4. run script
+source .env && rm -rf cache out && forge build && forge script --chain 42220 script/SetSeasonRewards.s.sol:SetSeasonRewardsScript --rpc-url https://forno.celo.org --broadcast --verify -vvvv --private-key ${PRIVATE_KEY}
 ```
 
 ### End Season & Withdraw
