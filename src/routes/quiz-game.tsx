@@ -150,6 +150,50 @@ const QUIZ_CONFIGS = {
         correct: 1
       }
     ]
+  },
+  'celo-swap-bridging': {
+    id: 'celo-swap-bridging',
+    title: 'Swaps & Bridging',
+    description: 'Learn how to swap tokens and bridge assets on CELO',
+    questions: [
+      {
+        question: "What is the safest way to swap tokens on CELO L2?",
+        options: ["Use any contract address you find online", "Use trusted DEXs like Uniswap/Curve and confirm you are on CELO L2", "Send tokens to a centralized exchange first", "Only swap on testnet"],
+        correct: 1
+      },
+      {
+        question: "What does bridging an asset generally involve?",
+        options: ["Printing new tokens without changing supply", "Locking or burning on the source chain and minting on the destination chain", "Only changing the token symbol locally", "Sending tokens to miners"],
+        correct: 1
+      },
+      {
+        question: "Before starting a bridge, what should you check?",
+        options: ["That you have native gas on the destination chain and the bridge supports CELO", "That you bridge during weekdays only", "That you disable your wallet security warnings", "That you remove all spending caps"],
+        correct: 0
+      }
+    ]
+  },
+  'celo-lending-borrowing': {
+    id: 'celo-lending-borrowing',
+    title: 'Lending & Borrowing',
+    description: 'Understand supplying liquidity and borrowing assets in CELO DeFi',
+    questions: [
+      {
+        question: "What happens when you supply assets to a CELO lending market like Aave?",
+        options: ["They are locked forever", "You earn yield and receive a receipt token for your deposit", "They are swapped automatically to CELO", "They become untransferable"],
+        correct: 1
+      },
+      {
+        question: "What does a health factor below 1.0 mean?",
+        options: ["Your position is over-collateralized", "You are safe from liquidation", "Your borrow can be liquidated unless repaid or collateral is increased", "You will earn bonus rewards"],
+        correct: 2
+      },
+      {
+        question: "How can you reduce liquidation risk when borrowing?",
+        options: ["Borrow the maximum allowed immediately", "Use volatile collateral only", "Keep borrow amounts conservative and monitor price swings", "Disable price oracles"],
+        correct: 2
+      }
+    ]
   }
 } as const
 

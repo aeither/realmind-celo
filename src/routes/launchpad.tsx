@@ -131,3 +131,4 @@ function LaunchpadPage() {
 export const Route = createFileRoute('/launchpad')({
   component: LaunchpadPage,
 })
+

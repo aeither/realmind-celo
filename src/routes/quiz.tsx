@@ -70,6 +70,24 @@ const AVAILABLE_QUIZZES: Quiz[] = [
     questions: 3,
     estimatedTime: "1-2 min",
     category: "CELO"
+  },
+  {
+    id: "celo-swap-bridging",
+    title: "Swaps & Bridging",
+    description: "Learn how to swap tokens and bridge assets safely on CELO",
+    icon: "🔄",
+    questions: 3,
+    estimatedTime: "1-2 min",
+    category: "CELO"
+  },
+  {
+    id: "celo-lending-borrowing",
+    title: "Lending & Borrowing",
+    description: "Understand supplying liquidity and borrowing assets in CELO DeFi",
+    icon: "💸",
+    questions: 3,
+    estimatedTime: "1-2 min",
+    category: "CELO"
   }
 ];
 
@@ -659,3 +677,4 @@ function QuizPage() {
 export const Route = createFileRoute('/quiz')({
   component: QuizPage,
 })
+
